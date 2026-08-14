@@ -3,6 +3,7 @@ import { DEFAULT_TRAITS } from "./types";
 export type CommentDraft = {
   characters: Record<string, string>;
   teacherComment: string;
+  markComments: Record<string, string>;
 };
 
 export async function generateComments(input: {
@@ -21,6 +22,8 @@ export async function generateComments(input: {
   const markLines = input.marks
     .map((row) => `${row.subject}: Test ${row.test || "—"}, EOT ${row.eot || "—"}, Grade ${row.grade}`)
     .join("\n");
+
+  const subjectList = input.marks.map((row) => row.subject).join(", ");
 
   const prompt = `You write report-card comments for Paradise Christian School, motto "Be The Light".
 Voice: warm, Christian, specific, honest, and encouraging. Short phrases for character. One paragraph for the class teacher comment. No averages. Do not invent extra subjects.
@@ -44,11 +47,13 @@ Return JSON only:
     "Hardworking": "",
     "Truthful": ""
   },
-  "teacherComment": ""
+  "teacherComment": "",
+  "markComments": {}
 }
 
 Each character remark is a short teacher-written phrase (3–8 words), not a locked slogan.
-The teacherComment is 2–4 sentences the class teacher can print after editing.`;
+The teacherComment must be brief - exactly 2-3 sentences maximum, under 150 characters total. Keep it concise and impactful.
+For markComments, provide a brief 2-4 word comment for each subject based on the grade. Keys should be exact subject names from the marks list.`;
 
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
@@ -82,6 +87,7 @@ The teacherComment is 2–4 sentences the class teacher can print after editing.
   const parsed = JSON.parse(raw) as {
     characters?: Record<string, string>;
     teacherComment?: string;
+    markComments?: Record<string, string>;
   };
 
   const characters: Record<string, string> = {};
@@ -89,8 +95,16 @@ The teacherComment is 2–4 sentences the class teacher can print after editing.
     characters[trait] = String(parsed.characters?.[trait] || "").trim();
   }
 
+  const markComments: Record<string, string> = {};
+  if (parsed.markComments) {
+    for (const [subject, comment] of Object.entries(parsed.markComments)) {
+      markComments[subject] = String(comment).trim();
+    }
+  }
+
   return {
     characters,
     teacherComment: String(parsed.teacherComment || "").trim(),
+    markComments,
   };
 }

@@ -108,6 +108,7 @@ export function MarksForm({
         error?: string;
         characters?: Record<string, string>;
         teacherComment?: string;
+        markComments?: Record<string, string>;
       };
       if (!response.ok) {
         setAiNote(data.error || "Could not generate comments.");
@@ -117,6 +118,14 @@ export function MarksForm({
         setCharRemarks((current) => ({ ...current, ...data.characters }));
       }
       if (data.teacherComment) setComment(data.teacherComment);
+      if (data.markComments) {
+        setRows((current) =>
+          current.map((row) => ({
+            ...row,
+            comment: data.markComments?.[row.name] || row.comment,
+          }))
+        );
+      }
       setAiNote("Draft filled. Edit anything, then save. Nothing is printed until you save.");
     } catch {
       setAiNote("Could not reach the comment service.");

@@ -227,9 +227,14 @@ export function ReportCard({
               style={{
                 margin: "10px 0 0",
                 fontFamily: DISPLAY,
-                fontSize: 14,
-                lineHeight: 1.45,
+                fontSize: 13,
+                lineHeight: 1.4,
                 color: INK,
+                maxHeight: 80,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
               }}
             >
               {teacherComment || "—"}
