@@ -45,6 +45,7 @@ a {
 }
 
 .print-sheet {
+  position: relative;
   width: 210mm;
   height: 297mm;
   max-width: 100%;
@@ -56,20 +57,36 @@ a {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.print-watermark {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 68%;
+  max-width: 430px;
+  transform: translate(-50%, -50%);
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .print-inner {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18mm 16mm 14mm;
+  gap: 11px;
+  padding: 12mm 14mm 11mm;
   box-sizing: border-box;
+  min-height: 0;
 }
 
 .print-grow {
   flex: 1 1 auto;
-  min-height: 18px;
+  min-height: 8px;
 }
 
 .modal-sheet {
@@ -121,10 +138,12 @@ a {
   .print-sheet {
     width: 210mm !important;
     height: 297mm !important;
+    max-height: 297mm !important;
     max-width: none !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    overflow: hidden !important;
     page-break-after: always;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -132,7 +151,11 @@ a {
   }
 
   .print-inner {
-    padding: 16mm 16mm 14mm !important;
+    padding: 12mm 14mm 11mm !important;
+  }
+
+  .print-watermark {
+    opacity: 0.07 !important;
   }
 
   .print-sheet:last-of-type {
