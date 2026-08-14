@@ -33,11 +33,19 @@ export function suggestedGradeFromPapers(
   scale?: GradeBand[],
 ): string {
   if (missed) return "U";
-  if (eot !== null && eot !== undefined && !Number.isNaN(Number(eot))) {
-    return suggestGrade(Number(eot), scale);
+  
+  const testNum = test !== null && test !== undefined && !Number.isNaN(Number(test)) ? Number(test) : null;
+  const eotNum = eot !== null && eot !== undefined && !Number.isNaN(Number(eot)) ? Number(eot) : null;
+  
+  if (testNum !== null && eotNum !== null) {
+    const average = (testNum + eotNum) / 2;
+    return suggestGrade(average, scale);
   }
-  if (test !== null && test !== undefined && !Number.isNaN(Number(test))) {
-    return suggestGrade(Number(test), scale);
+  if (eotNum !== null) {
+    return suggestGrade(eotNum, scale);
+  }
+  if (testNum !== null) {
+    return suggestGrade(testNum, scale);
   }
   return "U";
 }
