@@ -157,21 +157,21 @@ export function ReportCard({
             background: "#ffffff",
           }}
         >
-          <Meta label="Learner" value={student.name} />
-          <Meta label="Class" value={classLabel || "—"} />
-          <Meta label="Class adviser" value={student.adviser || "—"} />
-          <Meta label="Grading period" value={`${term}, ${year}`} />
+          <Meta label="Learner" value={student.name} isLastInRow={false} isLastColumn={false} />
+          <Meta label="Class" value={classLabel || "—"} isLastInRow={false} isLastColumn={true} />
+          <Meta label="Class adviser" value={student.adviser || "—"} isLastInRow={true} isLastColumn={false} />
+          <Meta label="Grading period" value={`${term}, ${year}`} isLastInRow={true} isLastColumn={true} />
         </section>
 
         <section style={{ border: `1px solid ${LINE}`, borderRadius: 8, overflow: "hidden", background: "#ffffff" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, fontFamily: SANS }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, fontFamily: SANS }}>
             <thead>
               <tr style={{ background: NAVY, color: "#ffffff" }}>
-                <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600 }}>Subject</th>
-                <th style={{ width: 62, padding: "8px 6px", fontWeight: 600 }}>Test</th>
-                <th style={{ width: 62, padding: "8px 6px", fontWeight: 600 }}>EOT</th>
-                <th style={{ width: 68, padding: "8px 6px", fontWeight: 600 }}>Grade</th>
-                <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600 }}>Remark</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", fontWeight: 600 }}>Subject</th>
+                <th style={{ width: 58, padding: "6px 5px", fontWeight: 600 }}>Test</th>
+                <th style={{ width: 58, padding: "6px 5px", fontWeight: 600 }}>EOT</th>
+                <th style={{ width: 64, padding: "6px 5px", fontWeight: 600 }}>Grade</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", fontWeight: 600 }}>Remark</th>
               </tr>
             </thead>
             <tbody>
@@ -184,7 +184,7 @@ export function ReportCard({
               ) : (
                 marks.map((row, i) => (
                   <tr key={row.subject_id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
-                    <td style={{ padding: "6px 12px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
+                    <td style={{ padding: "4px 10px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
                       {row.subject_name}
                     </td>
                     <td style={cellMono}>{row.missed ? "—" : row.test ?? "—"}</td>
@@ -192,7 +192,7 @@ export function ReportCard({
                     <td style={{ ...cellMono, paddingTop: 5, paddingBottom: 5 }}>
                       <GradeSeal grade={row.grade} />
                     </td>
-                    <td style={{ padding: "6px 12px", borderTop: `1px solid ${LINE}`, color: MUTED, fontStyle: "italic" }}>
+                    <td style={{ padding: "4px 10px", borderTop: `1px solid ${LINE}`, color: MUTED, fontStyle: "italic" }}>
                       {row.missed ? "Absent / not assessed" : row.comment || remarkFromGrade(row.grade)}
                     </td>
                   </tr>
@@ -204,7 +204,7 @@ export function ReportCard({
 
         <div className="print-grow" />
 
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div style={panel}>
             <SectionTitle>Character</SectionTitle>
             {characters.map((row) => (
@@ -226,7 +226,7 @@ export function ReportCard({
           </div>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 12 }}>
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 10 }}>
           <div style={panel}>
             <SectionTitle>Term dates</SectionTitle>
             <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}>Opens · {settings.term_open || "—"}</p>
@@ -248,7 +248,7 @@ export function ReportCard({
           </div>
         </section>
 
-        <footer style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, paddingTop: 4 }}>
+        <footer style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, paddingTop: 2 }}>
           <p style={{ margin: 0, fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
             Paradise Christian School
           </p>
@@ -266,16 +266,17 @@ export function ReportCard({
 }
 
 const cellMono: React.CSSProperties = {
-  padding: "6px 6px",
+  padding: "4px 6px",
   borderTop: `1px solid ${LINE}`,
   textAlign: "center",
   fontFamily: MONO,
+  fontSize: 11,
 };
 
 const panel: React.CSSProperties = {
   border: `1px solid ${LINE}`,
   borderRadius: 8,
-  padding: 12,
+  padding: 10,
   background: "rgba(255,255,255,0.86)",
 };
 
@@ -283,9 +284,9 @@ const rowLine: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   gap: 12,
-  padding: "5px 0",
+  padding: "3px 0",
   borderBottom: `1px solid ${LINE}`,
-  fontSize: 12,
+  fontSize: 11,
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -306,13 +307,17 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({ label, value, isLastInRow, isLastColumn }: { label: string; value: string; isLastInRow?: boolean; isLastColumn?: boolean }) {
   return (
-    <div style={{ padding: "9px 14px", borderBottom: `1px solid ${LINE}`, borderRight: `1px solid ${LINE}` }}>
-      <p style={{ margin: 0, fontFamily: SANS, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED }}>
+    <div style={{ 
+      padding: "7px 12px", 
+      borderBottom: isLastInRow ? "none" : `1px solid ${LINE}`, 
+      borderRight: isLastColumn ? "none" : `1px solid ${LINE}` 
+    }}>
+      <p style={{ margin: 0, fontFamily: SANS, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED }}>
         {label}
       </p>
-      <p style={{ margin: "3px 0 0", fontFamily: DISPLAY, fontSize: 16, color: NAVY, fontWeight: 700 }}>{value}</p>
+      <p style={{ margin: "2px 0 0", fontFamily: DISPLAY, fontSize: 15, color: NAVY, fontWeight: 700 }}>{value}</p>
     </div>
   );
 }
