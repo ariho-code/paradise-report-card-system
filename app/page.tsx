@@ -49,7 +49,7 @@ export default async function LoginPage({
               className="w-full rounded-xl border border-rule bg-parchment px-3 py-2.5"
             />
           </label>
-          <button type="submit" className="mt-6 w-full rounded-xl bg-navy py-3 text-sm font-semibold text-white">
+          <button type="submit" className="mt-6 w-full rounded-xl bg-[#16325c] py-3 text-sm font-semibold text-[#ffffff]">
             Open the ledger
           </button>
           <p className="mt-4 text-center text-xs text-ink/50">Default access: admin / admin123</p>

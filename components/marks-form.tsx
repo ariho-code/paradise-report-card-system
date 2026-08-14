@@ -258,7 +258,7 @@ export function MarksForm({
             type="button"
             onClick={generateComments}
             disabled={aiBusy}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#16325c] px-4 py-2.5 text-sm font-semibold text-[#ffffff] disabled:opacity-50"
           >
             {aiBusy ? "Writing…" : "Generate with AI"}
           </button>
@@ -300,7 +300,7 @@ export function MarksForm({
 
       <button
         type="submit"
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-navy px-6 py-3 text-sm font-semibold text-white hover:bg-[#1e4278] sm:w-auto"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#16325c] px-6 py-3 text-sm font-semibold text-[#ffffff] hover:bg-[#0d1f3d] sm:w-auto"
       >
         Save marks and open report
       </button>

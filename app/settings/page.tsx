@@ -64,7 +64,7 @@ export default async function SettingsPage({
               </select>
             </label>
           </div>
-          <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-navy px-5 py-2.5 text-sm font-semibold text-white">
+          <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#16325c] px-5 py-2.5 text-sm font-semibold text-[#ffffff]">
             Save school info
           </button>
         </form>
@@ -125,7 +125,7 @@ export default async function SettingsPage({
             <h2 className="font-[family-name:var(--font-display)] text-2xl text-navy">Password</h2>
             <Field label="Current password" name="current" type="password" />
             <Field label="New password" name="next" type="password" />
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-navy px-5 py-2.5 text-sm font-semibold text-white">
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#16325c] px-5 py-2.5 text-sm font-semibold text-[#ffffff]">
               Update password
             </button>
           </form>

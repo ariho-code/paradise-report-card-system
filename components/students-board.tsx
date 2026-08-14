@@ -52,7 +52,11 @@ export function StudentsBoard({
                   <button type="button" onClick={() => setOpen(student)} className={btnSecondary}>
                     Edit
                   </button>
-                  <Link href={`/marks/${student.id}?${periodQuery}`} className={btnPrimary}>
+                  <Link
+                    href={`/marks/${student.id}?${periodQuery}`}
+                    className={btnPrimary}
+                    style={{ backgroundColor: "#16325c", color: "#ffffff" }}
+                  >
                     Open marks
                   </Link>
                   <Link href={`/reports/print/${student.id}?${periodQuery}`} className={btnGold}>

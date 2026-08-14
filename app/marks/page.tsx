@@ -55,7 +55,11 @@ export default async function MarksIndexPage({
                   <p className="font-[family-name:var(--font-display)] text-xl text-navy">{student.name}</p>
                   <p className="text-sm text-ink/55">{student.grade}</p>
                 </div>
-                <Link href={`/marks/${student.id}?${q}`} className={btnPrimary}>
+                <Link
+                  href={`/marks/${student.id}?${q}`}
+                  className={btnPrimary}
+                  style={{ backgroundColor: "#16325c", color: "#ffffff" }}
+                >
                   Open marks
                 </Link>
               </li>

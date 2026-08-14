@@ -53,8 +53,8 @@ export function AppShell({
                 href={item.href}
                 className={`rounded-xl px-3 py-2.5 text-sm font-semibold ${
                   active
-                    ? "bg-white text-black"
-                    : "text-vellum/85 hover:bg-white hover:text-black"
+                    ? "bg-black text-white"
+                    : "text-white hover:bg-black hover:text-white"
                 }`}
               >
                 {item.label}
@@ -65,7 +65,7 @@ export function AppShell({
         <form action="/api/auth/logout" method="post" className="px-3 pb-6">
           <button
             type="submit"
-            className="w-full rounded-xl border border-white/15 px-3 py-2.5 text-left text-sm font-semibold text-white hover:bg-white hover:text-black"
+            className="w-full rounded-xl border border-white/20 px-3 py-2.5 text-left text-sm font-semibold text-white hover:bg-black hover:text-white"
           >
             Sign out
           </button>
@@ -108,7 +108,7 @@ export function AppShell({
               key={item.href}
               href={item.href}
               className={`rounded-xl px-1 py-2 text-center text-[11px] font-semibold ${
-                active ? "bg-navy text-white" : "text-navy"
+                active ? "bg-black text-white" : "text-navy hover:bg-black hover:text-white"
               }`}
             >
               {item.label}
