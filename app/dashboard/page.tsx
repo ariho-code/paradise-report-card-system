@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   const q = periodQuery(settings.current_year, settings.current_term);
 
   return (
-    <AppShell current="/dashboard" period={settings}>
+    <AppShell current="/dashboard" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Paradise Christian School"
         title="School ledger"

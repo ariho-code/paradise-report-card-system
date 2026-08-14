@@ -1,55 +1,63 @@
-import { GRADE_SCALE } from "./types";
+import { DEFAULT_GRADE_BANDS, bandRange, type GradeBand } from "./types";
 
-/** Suggest a letter grade from a single mark. Never averages two papers. */
-export function suggestGrade(mark: number | null | undefined): string {
+export function normalizeScale(scale?: GradeBand[] | null): GradeBand[] {
+  if (!scale || scale.length === 0) return DEFAULT_GRADE_BANDS;
+  const letters = ["A", "B", "C", "D", "E", "F", "U"];
+  return letters.map((grade) => {
+    const found = scale.find((row) => row.grade === grade);
+    const fallback = DEFAULT_GRADE_BANDS.find((row) => row.grade === grade)!;
+    return {
+      grade,
+      min: found?.min === undefined ? fallback.min : found.min,
+      meaning: found?.meaning?.trim() || fallback.meaning,
+    };
+  });
+}
+
+export function suggestGrade(mark: number | null | undefined, scale?: GradeBand[]): string {
   if (mark === null || mark === undefined || Number.isNaN(Number(mark))) return "U";
   const n = Number(mark);
-  if (n >= 80) return "A";
-  if (n >= 70) return "B";
-  if (n >= 60) return "C";
-  if (n >= 50) return "D";
-  if (n >= 41) return "E";
+  const bands = normalizeScale(scale)
+    .filter((band) => band.grade !== "U" && band.min !== null)
+    .sort((a, b) => (b.min as number) - (a.min as number));
+  for (const band of bands) {
+    if (n >= (band.min as number)) return band.grade;
+  }
   return "F";
 }
 
-/** Prefer End of Term. Fall back to the test paper if EOT is empty. */
 export function suggestedGradeFromPapers(
   test: number | null | undefined,
   eot: number | null | undefined,
   missed?: boolean,
+  scale?: GradeBand[],
 ): string {
   if (missed) return "U";
   if (eot !== null && eot !== undefined && !Number.isNaN(Number(eot))) {
-    return suggestGrade(Number(eot));
+    return suggestGrade(Number(eot), scale);
   }
   if (test !== null && test !== undefined && !Number.isNaN(Number(test))) {
-    return suggestGrade(Number(test));
+    return suggestGrade(Number(test), scale);
   }
   return "U";
 }
 
-export function gradeComment(grade: string): string {
-  const map: Record<string, string> = {
-    A: "Excellent work",
-    B: "Good progress",
-    C: "Keep it up",
-    D: "Needs more effort",
-    E: "More effort needed",
-    F: "Needs significant improvement",
-    U: "Not assessed",
-  };
-  return map[grade] || "";
-}
-
-export function gradeMeaning(grade: string): string {
-  return GRADE_SCALE.find((row) => row.grade === grade)?.meaning ?? "";
+export function gradeComment(grade: string, scale?: GradeBand[]): string {
+  const meaning = normalizeScale(scale).find((row) => row.grade === grade)?.meaning;
+  return meaning || "";
 }
 
 export function parseMark(value: FormDataEntryValue | null): number | null {
-  if (value === null || value === undefined) return null;
-  const text = String(value).trim();
-  if (text === "") return null;
-  const n = Number(text);
-  if (Number.isNaN(n)) return null;
-  return Math.min(100, Math.max(0, n));
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isNaN(num) ? null : num;
+}
+
+export function scaleForDisplay(scale?: GradeBand[]) {
+  const bands = normalizeScale(scale);
+  return bands.map((band) => ({
+    grade: band.grade,
+    range: bandRange(band, bands),
+    meaning: band.meaning,
+  }));
 }

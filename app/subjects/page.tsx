@@ -9,7 +9,7 @@ export default async function SubjectsPage() {
   const [settings, subjects] = await Promise.all([getSettings(), listSubjects()]);
 
   return (
-    <AppShell current="/subjects" period={settings}>
+    <AppShell current="/subjects" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Curriculum"
         title="Subjects"

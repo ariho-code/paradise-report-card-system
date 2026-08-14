@@ -8,7 +8,7 @@ export default async function NewStudentPage() {
   const [settings, subjects] = await Promise.all([getSettings(), listSubjects()]);
 
   return (
-    <AppShell current="/students" period={settings}>
+    <AppShell current="/students" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Register"
         title="Add student"

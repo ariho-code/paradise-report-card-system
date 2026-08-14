@@ -25,7 +25,7 @@ export default async function StudentMarksPage({
   const [settings, student] = await Promise.all([getSettings(), getStudent(studentId)]);
   if (!student) notFound();
 
-  const period = readPeriod(query, settings);
+  const period = readPeriod(query, { year: settings.current_year, term: settings.current_term });
   const subjects = await subjectsForStudent(student.id);
   const assessment = await getAssessment(student.id, period.year, period.term);
   const marks = assessment ? await listMarks(assessment.id) : [];
@@ -33,7 +33,7 @@ export default async function StudentMarksPage({
   const q = periodQuery(period.year, period.term);
 
   return (
-    <AppShell current="/marks" period={settings}>
+    <AppShell current="/marks" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker={`${period.term} · ${period.year}`}
         title={student.name}

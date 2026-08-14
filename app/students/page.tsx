@@ -15,7 +15,7 @@ export default async function StudentsPage() {
   ]);
 
   return (
-    <AppShell current="/students" period={settings}>
+    <AppShell current="/students" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Register"
         title="Students"

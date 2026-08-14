@@ -20,7 +20,7 @@ export default async function ClassPrintPage({
 }) {
   const query = await searchParams;
   const [settings, allStudents] = await Promise.all([getSettings(), listStudents()]);
-  const period = readPeriod(query, settings);
+  const period = readPeriod(query, { year: settings.current_year, term: settings.current_term });
   const q = periodQuery(period.year, period.term);
   const className = query.class || "";
   const students = className

@@ -1,3 +1,9 @@
+export type GradeBand = {
+  grade: string;
+  min: number | null;
+  meaning: string;
+};
+
 export type Settings = {
   id: string;
   school_name: string;
@@ -7,6 +13,7 @@ export type Settings = {
   term_end: string;
   current_year: string;
   current_term: string;
+  grade_scale: GradeBand[];
 };
 
 export type Student = {
@@ -75,12 +82,28 @@ export const DEFAULT_TRAITS = [
 
 export const LETTER_GRADES = ["A", "B", "C", "D", "E", "F", "U"] as const;
 
-export const GRADE_SCALE = [
-  { grade: "A", range: "80 – 100", meaning: "Excellent" },
-  { grade: "B", range: "70 – 79", meaning: "Good" },
-  { grade: "C", range: "60 – 69", meaning: "Satisfactory" },
-  { grade: "D", range: "50 – 59", meaning: "Needs effort" },
-  { grade: "E", range: "41 – 49", meaning: "Below average" },
-  { grade: "F", range: "40 & below", meaning: "Fail" },
-  { grade: "U", range: "—", meaning: "Not assessed" },
-] as const;
+export const DEFAULT_GRADE_BANDS: GradeBand[] = [
+  { grade: "A", min: 80, meaning: "Excellent" },
+  { grade: "B", min: 70, meaning: "Good" },
+  { grade: "C", min: 60, meaning: "Satisfactory" },
+  { grade: "D", min: 50, meaning: "Needs effort" },
+  { grade: "E", min: 41, meaning: "Below average" },
+  { grade: "F", min: 0, meaning: "Fail" },
+  { grade: "U", min: null, meaning: "Ungraded" },
+];
+
+export const GRADE_SCALE = DEFAULT_GRADE_BANDS.map((band) => ({
+  grade: band.grade,
+  range: bandRange(band),
+  meaning: band.meaning,
+}));
+
+export function bandRange(band: GradeBand, all: GradeBand[] = DEFAULT_GRADE_BANDS): string {
+  if (band.grade === "U" || band.min === null) return "Teacher assigned";
+  const higher = all
+    .filter((item) => item.min !== null && (item.min as number) > (band.min as number))
+    .sort((a, b) => (a.min as number) - (b.min as number))[0];
+  const top = higher ? (higher.min as number) - 1 : 100;
+  if (band.min === 0) return `${top} & below`;
+  return `${band.min} – ${top}`;
+}

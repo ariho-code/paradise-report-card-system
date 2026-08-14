@@ -13,7 +13,7 @@ export default async function SettingsPage({
   const [settings, years, terms] = await Promise.all([getSettings(), listYears(), listTerms()]);
 
   return (
-    <AppShell current="/settings" period={settings}>
+    <AppShell current="/settings" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Registry"
         title="School settings"

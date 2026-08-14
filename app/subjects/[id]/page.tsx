@@ -14,7 +14,7 @@ export default async function EditSubjectPage({
   if (!subject) notFound();
 
   return (
-    <AppShell current="/subjects" period={settings}>
+    <AppShell current="/subjects" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Curriculum"
         title={subject.name}

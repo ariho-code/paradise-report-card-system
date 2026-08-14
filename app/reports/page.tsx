@@ -24,14 +24,14 @@ export default async function ReportsPage({
     listYears(),
     listTerms(),
   ]);
-  const period = readPeriod(params, settings);
+  const period = readPeriod(params, { year: settings.current_year, term: settings.current_term });
   const q = periodQuery(period.year, period.term);
   const className = params.class || "";
   const visible = className ? students.filter((student) => student.grade === className) : students;
   const classQuery = className ? `&class=${encodeURIComponent(className)}` : "";
 
   return (
-    <AppShell current="/reports" period={settings}>
+    <AppShell current="/reports" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Documents"
         title="Report cards"

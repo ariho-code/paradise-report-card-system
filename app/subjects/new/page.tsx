@@ -7,7 +7,7 @@ export default async function NewSubjectPage() {
   const settings = await getSettings();
 
   return (
-    <AppShell current="/subjects" period={settings}>
+    <AppShell current="/subjects" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Curriculum"
         title="Add subject"

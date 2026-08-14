@@ -26,7 +26,7 @@ export default async function PrintReportPage({
   const [settings, student] = await Promise.all([getSettings(), getStudent(studentId)]);
   if (!student) notFound();
 
-  const period = readPeriod(query, settings);
+  const period = readPeriod(query, { year: settings.current_year, term: settings.current_term });
   const assessment = await getAssessment(student.id, period.year, period.term);
   const marks = assessment ? await listMarks(assessment.id) : [];
   const characters = assessment ? await listCharacterMarks(assessment.id) : [];

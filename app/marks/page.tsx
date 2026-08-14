@@ -23,11 +23,11 @@ export default async function MarksIndexPage({
     listYears(),
     listTerms(),
   ]);
-  const period = readPeriod(params, settings);
+  const period = readPeriod(params, { year: settings.current_year, term: settings.current_term });
   const q = periodQuery(period.year, period.term);
 
   return (
-    <AppShell current="/marks" period={settings}>
+    <AppShell current="/marks" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Assessment"
         title="Enter marks"

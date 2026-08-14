@@ -14,7 +14,7 @@ export default async function ClassesPage({
   const [settings, classes] = await Promise.all([getSettings(), listClasses()]);
 
   return (
-    <AppShell current="/classes" period={settings}>
+    <AppShell current="/classes" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Register"
         title="Classes"

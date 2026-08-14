@@ -21,7 +21,7 @@ export default async function EditStudentPage({
   const q = periodQuery(settings.current_year, settings.current_term);
 
   return (
-    <AppShell current="/students" period={settings}>
+    <AppShell current="/students" period={{ year: settings.current_year, term: settings.current_term }}>
       <PageHeader
         kicker="Register"
         title={student.name}
