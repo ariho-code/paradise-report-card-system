@@ -33,8 +33,8 @@ export default async function PrintReportPage({
   const q = periodQuery(period.year, period.term);
 
   return (
-    <main className="min-h-screen bg-white px-3 py-4 print:m-0 print:bg-white print:p-0">
-      <div className="no-print mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen bg-[#e8edf3] px-4 py-6 print:m-0 print:bg-white print:p-0">
+      <div className="no-print mx-auto mb-5 flex w-full max-w-[210mm] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-3 text-sm font-semibold text-navy">
           <Link href={`/reports?${q}`} className="underline-offset-4 hover:underline">
             Back

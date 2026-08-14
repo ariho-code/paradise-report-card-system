@@ -49,8 +49,8 @@ export default async function ClassPrintPage({
   const fileLabel = (className || "all-classes").replace(/\s+/g, "-");
 
   return (
-    <main className="min-h-screen space-y-8 bg-white px-3 py-4 print:m-0 print:space-y-0 print:bg-white print:p-0">
-      <div className="no-print mx-auto mb-2 flex max-w-[210mm] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen space-y-8 bg-[#e8edf3] px-4 py-6 print:m-0 print:space-y-0 print:bg-white print:p-0">
+      <div className="no-print mx-auto mb-5 flex w-full max-w-[210mm] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href={`/reports?${q}`} className="text-sm font-semibold text-navy underline-offset-4 hover:underline">
           Back to reports
         </Link>
