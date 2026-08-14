@@ -195,7 +195,7 @@ export function ReportCard({
 
         <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <div style={panel}>
-            <SectionTitle>Character</SectionTitle>
+            <div style={panelHeader}>Character</div>
             {characters.map((row) => (
               <div key={row.trait} style={rowLine}>
                 <strong style={{ color: NAVY }}>{row.trait}</strong>
@@ -204,7 +204,7 @@ export function ReportCard({
             ))}
           </div>
           <div style={panel}>
-            <SectionTitle>Grading key</SectionTitle>
+            <div style={panelHeader}>Grading key</div>
             {GRADE_SCALE.filter((row) => row.grade !== "U").map((row) => (
               <div key={row.grade} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <GradeSeal grade={row.grade} />
@@ -217,12 +217,12 @@ export function ReportCard({
 
         <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8 }}>
           <div style={panel}>
-            <SectionTitle>Term dates</SectionTitle>
+            <div style={panelHeader}>Term dates</div>
             <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}>Opens · {settings.term_open || "—"}</p>
             <p style={{ margin: "6px 0 0", fontSize: 13, fontFamily: SANS }}>Ends · {settings.term_end || "—"}</p>
           </div>
           <div style={panel}>
-            <SectionTitle>Teacher&apos;s comment</SectionTitle>
+            <div style={panelHeader}>Teacher&apos;s comment</div>
             <p
               style={{
                 margin: "10px 0 0",
@@ -238,12 +238,17 @@ export function ReportCard({
         </section>
 
         <footer style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, paddingTop: 0 }}>
-          <p style={{ margin: 0, fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Paradise Christian School
-          </p>
+          <div>
+            <p style={{ margin: 0, fontSize: 9, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Paradise Christian School
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 8, color: BRASS, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Invalid without school stamp
+            </p>
+          </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ marginLeft: "auto", width: 190, height: 1, background: NAVY }} />
-            <p style={{ margin: "8px 0 0", fontFamily: DISPLAY, fontSize: 16, color: NAVY }}>{settings.principal}</p>
+            <p style={{ margin: "12px 0 0", fontFamily: DISPLAY, fontSize: 16, color: NAVY }}>{settings.principal}</p>
             <p style={{ margin: "2px 0 0", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: MUTED }}>
               Principal
             </p>
@@ -269,6 +274,20 @@ const panel: React.CSSProperties = {
   background: "rgba(255,255,255,0.86)",
 };
 
+const panelHeader: React.CSSProperties = {
+  background: NAVY,
+  color: "#ffffff",
+  padding: "6px 10px",
+  margin: "-8px -8px 8px -8px",
+  borderTopLeftRadius: 8,
+  borderTopRightRadius: 8,
+  fontSize: 10,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  fontWeight: 700,
+  fontFamily: SANS,
+};
+
 const rowLine: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
@@ -277,24 +296,6 @@ const rowLine: React.CSSProperties = {
   borderBottom: `1px solid ${LINE}`,
   fontSize: 10,
 };
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      style={{
-        margin: 0,
-        fontFamily: SANS,
-        fontSize: 10,
-        letterSpacing: "0.16em",
-        textTransform: "uppercase",
-        color: BRASS,
-        fontWeight: 700,
-      }}
-    >
-      {children}
-    </p>
-  );
-}
 
 function Meta({ label, value, isLastInRow, isLastColumn }: { label: string; value: string; isLastInRow?: boolean; isLastColumn?: boolean }) {
   return (
