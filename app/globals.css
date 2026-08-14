@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1a2418;
+  --color-navy: #16325c;
+  --color-canopy: #2f5a32;
+  --color-leaf: #4a7a45;
+  --color-brass: #a6853a;
+  --color-brass-soft: #d7c48a;
+  --color-parchment: #f3ebda;
+  --color-vellum: #faf6ee;
+  --color-rule: #d4c9b0;
+  --color-rule-dark: #b7aa8c;
+  --color-blush: #8c2f2f;
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-sans: "Figtree", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--color-parchment);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+.ledger-rule {
+  background-image: linear-gradient(to bottom, transparent 31px, var(--color-rule) 32px);
+  background-size: 100% 32px;
+}
+
+.crest-watermark {
+  background-image: url("/logo.jpg");
+  background-repeat: no-repeat;
+  background-position: center 38%;
+  background-size: 34%;
+}
+
+.print-sheet {
+  width: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-sheet {
+  animation: sheetIn 0.22s ease;
+}
+
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-sheet {
+    animation: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 5mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-sheet,
+  .grade-seal {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: calc(297mm - 10mm) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    page-break-after: always;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    background: #ffffff !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .print-sheet:last-of-type {
+    page-break-after: auto;
+  }
+}
