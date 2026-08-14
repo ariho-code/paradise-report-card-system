@@ -86,12 +86,12 @@ export function ReportCard({
             height={150}
             style={{ width: 150, height: 150, objectFit: "contain", flexShrink: 0 }}
           />
-          <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h1
               style={{
                 margin: 0,
                 fontFamily: DISPLAY,
-                fontSize: 32,
+                fontSize: 36,
                 lineHeight: 1.08,
                 color: NAVY,
                 fontWeight: 700,
@@ -103,7 +103,7 @@ export function ReportCard({
               style={{
                 margin: "8px 0 0",
                 fontFamily: SANS,
-                fontSize: 12,
+                fontSize: 13,
                 letterSpacing: "0.34em",
                 textTransform: "uppercase",
                 color: BRASS,
@@ -112,38 +112,40 @@ export function ReportCard({
             >
               {settings.motto}
             </p>
-            <p
-              style={{
-                display: "inline-block",
-                margin: "12px 0 0",
-                padding: "5px 14px",
-                background: NAVY,
-                color: "#ffffff",
-                fontFamily: SANS,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                WebkitPrintColorAdjust: "exact",
-                printColorAdjust: "exact",
-              }}
-            >
-              Academic Progress Report
-            </p>
-            <p
-              style={{
-                margin: "8px 0 0",
-                fontFamily: MONO,
-                fontSize: 12,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: GREEN,
-              }}
-            >
-              {term} · {year}
-            </p>
           </div>
         </header>
+        <div style={{ textAlign: "center", paddingBottom: 8 }}>
+          <p
+            style={{
+              display: "inline-block",
+              margin: 0,
+              padding: "5px 14px",
+              background: NAVY,
+              color: "#ffffff",
+              fontFamily: SANS,
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              fontWeight: 700,
+              WebkitPrintColorAdjust: "exact",
+              printColorAdjust: "exact",
+            }}
+          >
+            Academic Progress Report
+          </p>
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontFamily: MONO,
+              fontSize: 12,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: GREEN,
+            }}
+          >
+            {term} · {year}
+          </p>
+        </div>
 
         <section
           style={{
