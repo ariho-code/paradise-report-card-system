@@ -4,7 +4,6 @@ import type { CharacterMark, Mark, Settings, Student } from "@/lib/types";
 const NAVY = "#16325c";
 const BRASS = "#a6853a";
 const GREEN = "#2f5a32";
-const LIGHT_GREEN = "#d4edda";
 const LINE = "#d5dbe6";
 const INK = "#1a1f2b";
 const MUTED = "#5c6573";
@@ -83,9 +82,9 @@ export function ReportCard({
           <img
             src="/logo.jpg"
             alt="Paradise Christian School"
-            width={108}
-            height={108}
-            style={{ width: 108, height: 108, objectFit: "contain", flexShrink: 0 }}
+            width={150}
+            height={150}
+            style={{ width: 150, height: 150, objectFit: "contain", flexShrink: 0 }}
           />
           <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
             <h1
@@ -166,7 +165,7 @@ export function ReportCard({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, fontFamily: SANS }}>
             <thead>
               <tr style={{ background: NAVY, color: "#ffffff" }}>
-                <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600, background: LIGHT_GREEN, color: NAVY }}>Subject</th>
+                <th style={{ textAlign: "left", padding: "8px 12px", fontWeight: 600 }}>Subject</th>
                 <th style={{ width: 62, padding: "8px 6px", fontWeight: 600 }}>Test</th>
                 <th style={{ width: 62, padding: "8px 6px", fontWeight: 600 }}>EOT</th>
                 <th style={{ width: 68, padding: "8px 6px", fontWeight: 600 }}>Grade</th>
@@ -183,7 +182,7 @@ export function ReportCard({
               ) : (
                 marks.map((row, i) => (
                   <tr key={row.subject_id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
-                    <td style={{ padding: "6px 12px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY, background: LIGHT_GREEN }}>
+                    <td style={{ padding: "6px 12px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
                       {row.subject_name}
                     </td>
                     <td style={cellMono}>{row.missed ? "—" : row.test ?? "—"}</td>
@@ -208,7 +207,7 @@ export function ReportCard({
             <SectionTitle>Character</SectionTitle>
             {characters.map((row) => (
               <div key={row.trait} style={rowLine}>
-                <strong style={{ color: NAVY, background: LIGHT_GREEN, padding: "2px 8px", borderRadius: 4 }}>{row.trait}</strong>
+                <strong style={{ color: NAVY }}>{row.trait}</strong>
                 <span style={{ fontStyle: "italic", color: MUTED, textAlign: "right" }}>{row.remark || "—"}</span>
               </div>
             ))}
@@ -217,9 +216,7 @@ export function ReportCard({
             <SectionTitle>Grading key</SectionTitle>
             {GRADE_SCALE.filter((row) => row.grade !== "U").map((row) => (
               <div key={row.grade} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                <div style={{ background: LIGHT_GREEN, padding: "2px 6px", borderRadius: 4 }}>
-                  <GradeSeal grade={row.grade} />
-                </div>
+                <GradeSeal grade={row.grade} />
                 <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED, width: 86 }}>{row.range}</span>
                 <span style={{ fontSize: 12 }}>{row.meaning}</span>
               </div>
@@ -230,8 +227,8 @@ export function ReportCard({
         <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 12 }}>
           <div style={panel}>
             <SectionTitle>Term dates</SectionTitle>
-            <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}><span style={{ background: LIGHT_GREEN, padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>Opens</span> · {settings.term_open || "—"}</p>
-            <p style={{ margin: "6px 0 0", fontSize: 13, fontFamily: SANS }}><span style={{ background: LIGHT_GREEN, padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>Ends</span> · {settings.term_end || "—"}</p>
+            <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}>Opens · {settings.term_open || "—"}</p>
+            <p style={{ margin: "6px 0 0", fontSize: 13, fontFamily: SANS }}>Ends · {settings.term_end || "—"}</p>
           </div>
           <div style={panel}>
             <SectionTitle>Teacher&apos;s comment</SectionTitle>
@@ -298,12 +295,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
         fontSize: 10,
         letterSpacing: "0.16em",
         textTransform: "uppercase",
-        color: NAVY,
+        color: BRASS,
         fontWeight: 700,
-        background: LIGHT_GREEN,
-        padding: "4px 8px",
-        borderRadius: 4,
-        display: "inline-block",
       }}
     >
       {children}

@@ -63,11 +63,11 @@ a {
 .print-watermark {
   position: absolute;
   left: 50%;
-  top: 52%;
-  width: 68%;
-  max-width: 430px;
+  top: 50%;
+  width: 50%;
+  max-width: 350px;
   transform: translate(-50%, -50%);
-  opacity: 0.08;
+  opacity: 0.05;
   pointer-events: none;
   z-index: 0;
 }
