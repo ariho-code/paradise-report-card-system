@@ -102,7 +102,8 @@ export const AWARD_LEVELS = ["Good", "Very Good", "Impressive"] as const;
 export const DEFAULT_EARLY_YEARS_AREAS = [
   "Communication, language and literacy",
   "Mathematics",
-  "Personal, social and emotional development",
+  "Personal development",
+  "Social and emotional development",
   "Understanding the world",
   "Physical development",
   "Creative expression",

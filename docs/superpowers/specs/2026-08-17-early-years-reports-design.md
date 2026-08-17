@@ -66,10 +66,17 @@ CREATE TABLE IF NOT EXISTS area_progress (
 values. Every existing row defaults to `standard`, so current learners resolve to
 exactly the subject list they have today.
 
-Six Early Years areas are seeded once, only when no `early_years` subject exists:
-Communication, language and literacy · Mathematics · Personal, social and
-emotional development · Understanding the world · Physical development ·
-Creative expression.
+Seven Early Years areas are seeded once, only when no `early_years` subject
+exists: Communication, language and literacy · Mathematics · Personal
+development · Social and emotional development · Understanding the world ·
+Physical development · Creative expression.
+
+Personal development and social/emotional development were originally one
+combined area. Databases seeded before the split carry the combined row;
+`splitPersonalSocialArea` renames it to "Personal development" — keeping the row
+id so progress already written stays attached — shifts the later areas down one,
+and inserts "Social and emotional development" beside it. It is guarded on the
+old name so it runs exactly once and never renumbers on a later cold start.
 
 Awards are the three words on the school's printed key: `Good`, `Very Good`,
 `Impressive`, plus blank for "not yet awarded".

@@ -200,6 +200,39 @@ async function ensureUpgrades() {
   `;
 
   await seedEarlyYearsAreas();
+  await splitPersonalSocialArea();
+}
+
+/**
+ * The school tracks personal development separately from social and emotional
+ * development. Databases seeded before that decision carry one combined area;
+ * rename it to the first and add the second beside it. Guarded on the old name
+ * so it runs exactly once and never renumbers twice.
+ */
+async function splitPersonalSocialArea() {
+  const combined = await sql<{ id: string; sort_order: number }[]>`
+    SELECT id, sort_order FROM subjects
+    WHERE stage = 'early_years' AND name = 'Personal, social and emotional development'
+  `;
+  if (!combined[0]) return;
+
+  // Keep the row id so progress already written against the combined area
+  // stays with personal development rather than being orphaned.
+  await sql`UPDATE subjects SET name = 'Personal development' WHERE id = ${combined[0].id}`;
+
+  await sql`
+    UPDATE subjects SET sort_order = sort_order + 1
+    WHERE stage = 'early_years' AND sort_order > ${combined[0].sort_order}
+  `;
+
+  await sql`
+    INSERT INTO subjects (id, name, compulsory, sort_order, stage)
+    VALUES (
+      ${crypto.randomUUID()}, 'Social and emotional development', true,
+      ${combined[0].sort_order + 1}, 'early_years'
+    )
+    ON CONFLICT (name, stage) DO NOTHING
+  `;
 }
 
 async function seedEarlyYearsAreas() {
