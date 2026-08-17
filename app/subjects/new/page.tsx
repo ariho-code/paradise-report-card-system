@@ -22,6 +22,13 @@ export default async function NewSubjectPage() {
           <span className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-brass">Subject name</span>
           <input name="name" required className="w-full border border-rule bg-parchment px-3 py-2" />
         </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-brass">Belongs to</span>
+          <select name="stage" defaultValue="standard" className="w-full border border-rule bg-parchment px-3 py-2">
+            <option value="standard">Subjects · marks report</option>
+            <option value="early_years">Early Years · comment report</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="compulsory" defaultChecked />
           Compulsory for every learner

@@ -1,14 +1,17 @@
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
 import {
+  DEFAULT_EARLY_YEARS_AREAS,
   DEFAULT_TERM,
   DEFAULT_TRAITS,
   DEFAULT_YEAR,
+  type AreaProgress,
   type Assessment,
   type CharacterMark,
   type Mark,
   type SchoolClass,
   type Settings,
+  type Stage,
   type Student,
   type Subject,
 } from "./types";
@@ -55,6 +58,7 @@ async function applySchema() {
     const existing = await sql`SELECT id FROM settings WHERE id = 'school'`;
     if (existing.length === 0) await seedDefaults();
     await ensureClassesTable();
+    await ensureUpgrades();
     return;
   }
 
@@ -159,6 +163,61 @@ async function applySchema() {
     await seedDefaults();
   }
   await ensureClassesTable();
+  await ensureUpgrades();
+}
+
+/**
+ * Additive migrations for databases created before Early Years support.
+ * applySchema returns early when `settings` already exists, so this runs on
+ * both branches — anything left in applySchema's tail never reaches a live DB.
+ */
+async function ensureUpgrades() {
+  await sql`ALTER TABLE classes ADD COLUMN IF NOT EXISTS level TEXT NOT NULL DEFAULT 'standard'`;
+  await sql`ALTER TABLE subjects ADD COLUMN IF NOT EXISTS stage TEXT NOT NULL DEFAULT 'standard'`;
+
+  // Subject names were globally unique, which would stop Early Years from
+  // tracking "Mathematics" while a Grade class already has the subject.
+  // Names only need to be unique within their own stage.
+  await sql`ALTER TABLE subjects DROP CONSTRAINT IF EXISTS subjects_name_key`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS subjects_name_stage_key ON subjects (name, stage)`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS student_exclusions (
+      student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+      PRIMARY KEY (student_id, subject_id)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS area_progress (
+      assessment_id TEXT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+      progress TEXT NOT NULL DEFAULT '',
+      award TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (assessment_id, subject_id)
+    )
+  `;
+
+  await seedEarlyYearsAreas();
+}
+
+async function seedEarlyYearsAreas() {
+  const count = await sql<{ n: number }[]>`
+    SELECT COUNT(*)::int AS n FROM subjects WHERE stage = 'early_years'
+  `;
+  if ((count[0]?.n ?? 0) > 0) return;
+
+  const rows = await sql<{ max: number }[]>`SELECT COALESCE(MAX(sort_order), 0) AS max FROM subjects`;
+  let sort = rows[0].max + 1;
+  for (const name of DEFAULT_EARLY_YEARS_AREAS) {
+    await sql`
+      INSERT INTO subjects (id, name, compulsory, sort_order, stage)
+      VALUES (${crypto.randomUUID()}, ${name}, true, ${sort}, 'early_years')
+      ON CONFLICT (name, stage) DO NOTHING
+    `;
+    sort += 1;
+  }
 }
 
 async function ensureClassesTable() {
@@ -404,41 +463,55 @@ export async function removeYear(name: string) {
 export async function listClasses(): Promise<SchoolClass[]> {
   await ensureSchema();
   return sql<SchoolClass[]>`
-    SELECT id, name, sort_order FROM classes ORDER BY sort_order, name
+    SELECT id, name, sort_order, level FROM classes ORDER BY sort_order, name
   `;
 }
 
 export async function getClass(id: string) {
   await ensureSchema();
   const rows = await sql<SchoolClass[]>`
-    SELECT id, name, sort_order FROM classes WHERE id = ${id}
+    SELECT id, name, sort_order, level FROM classes WHERE id = ${id}
   `;
   return rows[0] ?? null;
 }
 
-export async function createClass(name: string) {
+export async function createClass(name: string, level: Stage = "standard") {
   await ensureSchema();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Class name is required.");
   const rows = await sql<{ max: number }[]>`SELECT COALESCE(MAX(sort_order), 0) AS max FROM classes`;
   const id = crypto.randomUUID();
   await sql`
-    INSERT INTO classes (id, name, sort_order)
-    VALUES (${id}, ${trimmed}, ${rows[0].max + 1})
+    INSERT INTO classes (id, name, sort_order, level)
+    VALUES (${id}, ${trimmed}, ${rows[0].max + 1}, ${level})
   `;
   return id;
 }
 
-export async function updateClass(id: string, name: string) {
+export async function updateClass(id: string, name: string, level: Stage = "standard") {
   await ensureSchema();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Class name is required.");
   const current = await getClass(id);
   if (!current) throw new Error("Class not found.");
-  await sql`UPDATE classes SET name = ${trimmed} WHERE id = ${id}`;
+  await sql`UPDATE classes SET name = ${trimmed}, level = ${level} WHERE id = ${id}`;
   if (current.name !== trimmed) {
     await sql`UPDATE students SET grade = ${trimmed} WHERE grade = ${current.name}`;
   }
+}
+
+/**
+ * Report type follows the class, matched by name since students store the class
+ * name rather than an id. An unmatched name falls back to standard so a learner
+ * is never stranded without subjects.
+ */
+export async function stageForGrade(grade: string): Promise<Stage> {
+  await ensureSchema();
+  if (!grade) return "standard";
+  const rows = await sql<{ level: Stage }[]>`
+    SELECT level FROM classes WHERE name = ${grade}
+  `;
+  return rows[0]?.level === "early_years" ? "early_years" : "standard";
 }
 
 export async function deleteClass(id: string) {
@@ -464,15 +537,24 @@ export async function listStudents(): Promise<Student[]> {
   const optionals = await sql<{ student_id: string; subject_id: string }[]>`
     SELECT student_id, subject_id FROM student_optionals
   `;
-  const extras = new Map<string, string[]>();
-  for (const row of optionals) {
-    const list = extras.get(row.student_id) ?? [];
-    list.push(row.subject_id);
-    extras.set(row.student_id, list);
-  }
+  const exclusions = await sql<{ student_id: string; subject_id: string }[]>`
+    SELECT student_id, subject_id FROM student_exclusions
+  `;
+  const group = (rows: { student_id: string; subject_id: string }[]) => {
+    const map = new Map<string, string[]>();
+    for (const row of rows) {
+      const list = map.get(row.student_id) ?? [];
+      list.push(row.subject_id);
+      map.set(row.student_id, list);
+    }
+    return map;
+  };
+  const extras = group(optionals);
+  const removed = group(exclusions);
   return students.map((student) => ({
     ...student,
     optional_subject_ids: extras.get(student.id) ?? [],
+    excluded_subject_ids: removed.get(student.id) ?? [],
   }));
 }
 
@@ -486,41 +568,56 @@ export async function getStudent(id: string): Promise<Student | null> {
   const optionals = await sql<{ subject_id: string }[]>`
     SELECT subject_id FROM student_optionals WHERE student_id = ${id}
   `;
-  return { ...rows[0], optional_subject_ids: optionals.map((o) => o.subject_id) };
+  const exclusions = await sql<{ subject_id: string }[]>`
+    SELECT subject_id FROM student_exclusions WHERE student_id = ${id}
+  `;
+  return {
+    ...rows[0],
+    optional_subject_ids: optionals.map((o) => o.subject_id),
+    excluded_subject_ids: exclusions.map((o) => o.subject_id),
+  };
 }
 
-export async function createStudent(input: {
+type StudentInput = {
   name: string;
   grade: string;
   section: string;
   adviser: string;
   optional_subject_ids: string[];
-}) {
+  excluded_subject_ids: string[];
+};
+
+async function writeStudentSubjects(id: string, input: StudentInput) {
+  await sql`DELETE FROM student_optionals WHERE student_id = ${id}`;
+  for (const subjectId of input.optional_subject_ids) {
+    await sql`
+      INSERT INTO student_optionals (student_id, subject_id)
+      VALUES (${id}, ${subjectId})
+      ON CONFLICT DO NOTHING
+    `;
+  }
+  await sql`DELETE FROM student_exclusions WHERE student_id = ${id}`;
+  for (const subjectId of input.excluded_subject_ids) {
+    await sql`
+      INSERT INTO student_exclusions (student_id, subject_id)
+      VALUES (${id}, ${subjectId})
+      ON CONFLICT DO NOTHING
+    `;
+  }
+}
+
+export async function createStudent(input: StudentInput) {
   await ensureSchema();
   const id = crypto.randomUUID();
   await sql`
     INSERT INTO students (id, name, grade, section, adviser)
     VALUES (${id}, ${input.name}, ${input.grade}, ${input.section}, ${input.adviser})
   `;
-  for (const subjectId of input.optional_subject_ids) {
-    await sql`
-      INSERT INTO student_optionals (student_id, subject_id)
-      VALUES (${id}, ${subjectId})
-    `;
-  }
+  await writeStudentSubjects(id, input);
   return id;
 }
 
-export async function updateStudent(
-  id: string,
-  input: {
-    name: string;
-    grade: string;
-    section: string;
-    adviser: string;
-    optional_subject_ids: string[];
-  },
-) {
+export async function updateStudent(id: string, input: StudentInput) {
   await ensureSchema();
   await sql`
     UPDATE students
@@ -528,13 +625,7 @@ export async function updateStudent(
         section = ${input.section}, adviser = ${input.adviser}
     WHERE id = ${id}
   `;
-  await sql`DELETE FROM student_optionals WHERE student_id = ${id}`;
-  for (const subjectId of input.optional_subject_ids) {
-    await sql`
-      INSERT INTO student_optionals (student_id, subject_id)
-      VALUES (${id}, ${subjectId})
-    `;
-  }
+  await writeStudentSubjects(id, input);
 }
 
 export async function deleteStudent(id: string) {
@@ -545,7 +636,7 @@ export async function deleteStudent(id: string) {
 export async function listSubjects(): Promise<Subject[]> {
   await ensureSchema();
   return sql<Subject[]>`
-    SELECT id, name, compulsory, sort_order
+    SELECT id, name, compulsory, sort_order, stage
     FROM subjects
     ORDER BY sort_order, name
   `;
@@ -554,26 +645,30 @@ export async function listSubjects(): Promise<Subject[]> {
 export async function getSubject(id: string): Promise<Subject | null> {
   await ensureSchema();
   const rows = await sql<Subject[]>`
-    SELECT id, name, compulsory, sort_order FROM subjects WHERE id = ${id}
+    SELECT id, name, compulsory, sort_order, stage FROM subjects WHERE id = ${id}
   `;
   return rows[0] ?? null;
 }
 
-export async function createSubject(input: { name: string; compulsory: boolean }) {
+export async function createSubject(input: { name: string; compulsory: boolean; stage: Stage }) {
   await ensureSchema();
   const rows = await sql<{ max: number }[]>`SELECT COALESCE(MAX(sort_order), 0) AS max FROM subjects`;
   const id = crypto.randomUUID();
   await sql`
-    INSERT INTO subjects (id, name, compulsory, sort_order)
-    VALUES (${id}, ${input.name}, ${input.compulsory}, ${rows[0].max + 1})
+    INSERT INTO subjects (id, name, compulsory, sort_order, stage)
+    VALUES (${id}, ${input.name}, ${input.compulsory}, ${rows[0].max + 1}, ${input.stage})
   `;
   return id;
 }
 
-export async function updateSubject(id: string, input: { name: string; compulsory: boolean }) {
+export async function updateSubject(
+  id: string,
+  input: { name: string; compulsory: boolean; stage: Stage },
+) {
   await ensureSchema();
   await sql`
-    UPDATE subjects SET name = ${input.name}, compulsory = ${input.compulsory}
+    UPDATE subjects
+    SET name = ${input.name}, compulsory = ${input.compulsory}, stage = ${input.stage}
     WHERE id = ${id}
   `;
 }
@@ -583,15 +678,25 @@ export async function deleteSubject(id: string) {
   await sql`DELETE FROM subjects WHERE id = ${id}`;
 }
 
-export async function subjectsForStudent(studentId: string): Promise<Subject[]> {
+/**
+ * The one place a learner's list is resolved. Filters to the stage of the class
+ * the learner sits in, then drops anything the teacher marked as not taken.
+ */
+export async function subjectsForStudent(studentId: string, stage: Stage): Promise<Subject[]> {
   await ensureSchema();
   return sql<Subject[]>`
-    SELECT s.id, s.name, s.compulsory, s.sort_order
+    SELECT s.id, s.name, s.compulsory, s.sort_order, s.stage
     FROM subjects s
-    WHERE s.compulsory = true
-       OR s.id IN (
-         SELECT subject_id FROM student_optionals WHERE student_id = ${studentId}
-       )
+    WHERE s.stage = ${stage}
+      AND (
+        s.compulsory = true
+        OR s.id IN (
+          SELECT subject_id FROM student_optionals WHERE student_id = ${studentId}
+        )
+      )
+      AND s.id NOT IN (
+        SELECT subject_id FROM student_exclusions WHERE student_id = ${studentId}
+      )
     ORDER BY s.sort_order, s.name
   `;
 }
@@ -640,13 +745,35 @@ export async function getAssessment(studentId: string, year: string, term: strin
 
 export async function listMarks(assessmentId: string): Promise<Mark[]> {
   await ensureSchema();
+  // Subjects the teacher has since removed from this learner drop off the
+  // report without their saved marks being destroyed — restore the subject and
+  // the marks come back.
   return sql<Mark[]>`
     SELECT m.assessment_id, m.subject_id, s.name AS subject_name,
            m.test::float8 AS test, m.eot::float8 AS eot,
            m.grade, m.missed, m.comment
     FROM marks m
     JOIN subjects s ON s.id = m.subject_id
+    JOIN assessments a ON a.id = m.assessment_id
     WHERE m.assessment_id = ${assessmentId}
+      AND s.id NOT IN (
+        SELECT subject_id FROM student_exclusions WHERE student_id = a.student_id
+      )
+    ORDER BY s.sort_order, s.name
+  `;
+}
+
+export async function listAreaProgress(assessmentId: string): Promise<AreaProgress[]> {
+  await ensureSchema();
+  return sql<AreaProgress[]>`
+    SELECT p.assessment_id, p.subject_id, s.name AS subject_name, p.progress, p.award
+    FROM area_progress p
+    JOIN subjects s ON s.id = p.subject_id
+    JOIN assessments a ON a.id = p.assessment_id
+    WHERE p.assessment_id = ${assessmentId}
+      AND s.id NOT IN (
+        SELECT subject_id FROM student_exclusions WHERE student_id = a.student_id
+      )
     ORDER BY s.sort_order, s.name
   `;
 }
@@ -727,13 +854,46 @@ export async function saveAssessmentBundle(input: {
   }
 }
 
+export async function saveEarlyYearsBundle(input: {
+  assessmentId: string;
+  teacherComment: string;
+  areas: Array<{ subjectId: string; progress: string; award: string }>;
+}) {
+  await ensureSchema();
+  await sql`
+    UPDATE assessments SET teacher_comment = ${input.teacherComment}
+    WHERE id = ${input.assessmentId}
+  `;
+
+  for (const area of input.areas) {
+    const progress = area.progress.trim();
+    const award = area.award.trim();
+    if (!progress && !award) {
+      await sql`
+        DELETE FROM area_progress
+        WHERE assessment_id = ${input.assessmentId} AND subject_id = ${area.subjectId}
+      `;
+      continue;
+    }
+    await sql`
+      INSERT INTO area_progress (assessment_id, subject_id, progress, award)
+      VALUES (${input.assessmentId}, ${area.subjectId}, ${progress}, ${award})
+      ON CONFLICT (assessment_id, subject_id)
+      DO UPDATE SET progress = EXCLUDED.progress, award = EXCLUDED.award
+    `;
+  }
+}
+
 export async function countReportsReady(year: string, term: string) {
   await ensureSchema();
   const rows = await sql<{ n: number }[]>`
     SELECT COUNT(DISTINCT a.student_id)::int AS n
     FROM assessments a
-    JOIN marks m ON m.assessment_id = a.id
     WHERE a.year = ${year} AND a.term = ${term}
+      AND (
+        EXISTS (SELECT 1 FROM marks m WHERE m.assessment_id = a.id)
+        OR EXISTS (SELECT 1 FROM area_progress p WHERE p.assessment_id = a.id)
+      )
   `;
   return rows[0]?.n ?? 0;
 }

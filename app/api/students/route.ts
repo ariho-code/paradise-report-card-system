@@ -29,12 +29,20 @@ export async function POST(request: NextRequest) {
   const section = String(form.get("section") || "").trim();
   const adviser = String(form.get("adviser") || "").trim();
   const optional = form.getAll("optional").map(String);
+  const excluded = form.getAll("excluded").map(String);
 
   if (!name || !grade) {
     return NextResponse.redirect(new URL("/students/new?error=1", origin), 303);
   }
 
-  const payload = { name, grade, section, adviser, optional_subject_ids: optional };
+  const payload = {
+    name,
+    grade,
+    section,
+    adviser,
+    optional_subject_ids: optional,
+    excluded_subject_ids: excluded,
+  };
   if (id) await updateStudent(id, payload);
   else await createStudent(payload);
 

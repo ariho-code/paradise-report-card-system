@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EarlyYearsReport } from "@/components/early-years-report";
 import { PdfDownloadButton } from "@/components/pdf-download";
 import { PrintButton } from "@/components/print-button";
 import { ReportCard } from "@/components/report-card";
@@ -7,8 +8,11 @@ import {
   getAssessment,
   getSettings,
   getStudent,
+  listAreaProgress,
   listCharacterMarks,
   listMarks,
+  stageForGrade,
+  subjectsForStudent,
 } from "@/lib/db";
 import { periodQuery, readPeriod } from "@/lib/period";
 
@@ -28,8 +32,11 @@ export default async function PrintReportPage({
 
   const period = readPeriod(query, { year: settings.current_year, term: settings.current_term });
   const assessment = await getAssessment(student.id, period.year, period.term);
-  const marks = assessment ? await listMarks(assessment.id) : [];
-  const characters = assessment ? await listCharacterMarks(assessment.id) : [];
+  const earlyYears = (await stageForGrade(student.grade)) === "early_years";
+  const marks = assessment && !earlyYears ? await listMarks(assessment.id) : [];
+  const characters = assessment && !earlyYears ? await listCharacterMarks(assessment.id) : [];
+  const areas = earlyYears ? await subjectsForStudent(student.id, "early_years") : [];
+  const progress = assessment && earlyYears ? await listAreaProgress(assessment.id) : [];
   const q = periodQuery(period.year, period.term);
 
   return (
@@ -48,15 +55,27 @@ export default async function PrintReportPage({
           <PdfDownloadButton filename={`${student.name.replace(/\s+/g, "-")}-${period.term}-${period.year}.pdf`} />
         </div>
       </div>
-      <ReportCard
-        student={student}
-        settings={settings}
-        year={period.year}
-        term={period.term}
-        marks={marks}
-        characters={characters}
-        teacherComment={assessment?.teacher_comment || ""}
-      />
+      {earlyYears ? (
+        <EarlyYearsReport
+          student={student}
+          settings={settings}
+          year={period.year}
+          term={period.term}
+          areas={areas}
+          progress={progress}
+          teacherComment={assessment?.teacher_comment || ""}
+        />
+      ) : (
+        <ReportCard
+          student={student}
+          settings={settings}
+          year={period.year}
+          term={period.term}
+          marks={marks}
+          characters={characters}
+          teacherComment={assessment?.teacher_comment || ""}
+        />
+      )}
     </main>
   );
 }

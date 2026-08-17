@@ -24,19 +24,24 @@ export type Student = {
   adviser: string;
   created_at: string;
   optional_subject_ids?: string[];
+  excluded_subject_ids?: string[];
 };
+
+export type Stage = "standard" | "early_years";
 
 export type Subject = {
   id: string;
   name: string;
   compulsory: boolean;
   sort_order: number;
+  stage: Stage;
 };
 
 export type SchoolClass = {
   id: string;
   name: string;
   sort_order: number;
+  level: Stage;
 };
 
 export type Assessment = {
@@ -64,6 +69,14 @@ export type CharacterMark = {
   remark: string;
 };
 
+export type AreaProgress = {
+  assessment_id: string;
+  subject_id: string;
+  subject_name?: string;
+  progress: string;
+  award: string;
+};
+
 export type Period = {
   year: string;
   term: string;
@@ -81,6 +94,24 @@ export const DEFAULT_TRAITS = [
 ] as const;
 
 export const LETTER_GRADES = ["A", "B", "C", "D", "E", "F", "U"] as const;
+
+/** The three words printed on the school's Early Years key strip. */
+export const AWARD_LEVELS = ["Good", "Very Good", "Impressive"] as const;
+
+/** Seeded once for Early Years classes. Teachers edit these like any subject. */
+export const DEFAULT_EARLY_YEARS_AREAS = [
+  "Communication, language and literacy",
+  "Mathematics",
+  "Personal, social and emotional development",
+  "Understanding the world",
+  "Physical development",
+  "Creative expression",
+] as const;
+
+export const STAGE_LABELS: Record<Stage, string> = {
+  standard: "Standard · marks",
+  early_years: "Early Years · comments",
+};
 
 export const DEFAULT_GRADE_BANDS: GradeBand[] = [
   { grade: "A", min: 80, meaning: "Excellent" },

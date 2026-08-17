@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { EarlyYearsReport } from "@/components/early-years-report";
 import { PdfDownloadButton } from "@/components/pdf-download";
 import { PrintButton } from "@/components/print-button";
 import { ReportCard } from "@/components/report-card";
 import {
   getAssessment,
   getSettings,
+  listAreaProgress,
   listCharacterMarks,
   listMarks,
   listStudents,
+  stageForGrade,
+  subjectsForStudent,
 } from "@/lib/db";
 import { periodQuery, readPeriod } from "@/lib/period";
 
@@ -30,6 +34,21 @@ export default async function ClassPrintPage({
   const cards = [];
   for (const student of students) {
     const assessment = await getAssessment(student.id, period.year, period.term);
+    if ((await stageForGrade(student.grade)) === "early_years") {
+      cards.push(
+        <EarlyYearsReport
+          key={student.id}
+          student={student}
+          settings={settings}
+          year={period.year}
+          term={period.term}
+          areas={await subjectsForStudent(student.id, "early_years")}
+          progress={assessment ? await listAreaProgress(assessment.id) : []}
+          teacherComment={assessment?.teacher_comment || ""}
+        />,
+      );
+      continue;
+    }
     const marks = assessment ? await listMarks(assessment.id) : [];
     const characters = assessment ? await listCharacterMarks(assessment.id) : [];
     cards.push(

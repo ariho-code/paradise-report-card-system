@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/auth";
 import { createClass, deleteClass, updateClass } from "@/lib/db";
 import { requestOrigin } from "@/lib/http";
+import type { Stage } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   const origin = requestOrigin(request);
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest) {
   const intent = String(form.get("intent") || "save");
   const id = String(form.get("id") || "");
   const name = String(form.get("name") || "").trim();
+  const level: Stage = form.get("level") === "early_years" ? "early_years" : "standard";
 
   try {
     if (intent === "delete") {
@@ -19,8 +21,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL("/classes", origin), 303);
     }
     if (!name) return NextResponse.redirect(new URL("/classes?error=name", origin), 303);
-    if (id) await updateClass(id, name);
-    else await createClass(name);
+    if (id) await updateClass(id, name, level);
+    else await createClass(name, level);
     return NextResponse.redirect(new URL("/classes", origin), 303);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save class.";

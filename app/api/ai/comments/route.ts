@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/auth";
-import { generateComments } from "@/lib/deepseek";
+import { generateComments, generateEarlyYearsComments } from "@/lib/deepseek";
 
 export async function POST(request: NextRequest) {
   const session = await readSessionToken(request.cookies.get("pcs_session")?.value);
@@ -16,15 +16,29 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json()) as {
+    mode?: string;
     studentName?: string;
     studentClass?: string;
     year?: string;
     term?: string;
     summary?: string;
     marks?: Array<{ subject: string; test: string; eot: string; grade: string }>;
+    areas?: Array<{ area: string; award: string }>;
   };
 
   try {
+    if (body.mode === "early_years") {
+      const draft = await generateEarlyYearsComments({
+        studentName: String(body.studentName || "Learner"),
+        studentClass: String(body.studentClass || ""),
+        year: String(body.year || ""),
+        term: String(body.term || ""),
+        summary: String(body.summary || ""),
+        areas: body.areas || [],
+      });
+      return NextResponse.json(draft);
+    }
+
     const draft = await generateComments({
       studentName: String(body.studentName || "Learner"),
       studentClass: String(body.studentClass || ""),

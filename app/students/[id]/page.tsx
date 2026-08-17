@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { StudentForm } from "@/components/student-form";
-import { getSettings, getStudent, listSubjects } from "@/lib/db";
+import { getSettings, getStudent, listClasses, listSubjects } from "@/lib/db";
 import { periodQuery } from "@/lib/period";
 
 export default async function EditStudentPage({
@@ -12,10 +12,11 @@ export default async function EditStudentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [settings, student, subjects] = await Promise.all([
+  const [settings, student, subjects, classes] = await Promise.all([
     getSettings(),
     getStudent(id),
     listSubjects(),
+    listClasses(),
   ]);
   if (!student) notFound();
   const q = periodQuery(settings.current_year, settings.current_term);
@@ -37,7 +38,7 @@ export default async function EditStudentPage({
           </div>
         }
       />
-      <StudentForm student={student} subjects={subjects} />
+      <StudentForm student={student} subjects={subjects} classes={classes} />
     </AppShell>
   );
 }

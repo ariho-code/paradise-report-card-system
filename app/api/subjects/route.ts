@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/auth";
 import { createSubject, deleteSubject, updateSubject } from "@/lib/db";
 import { requestOrigin } from "@/lib/http";
+import type { Stage } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   const origin = requestOrigin(request);
@@ -19,10 +20,11 @@ export async function POST(request: NextRequest) {
 
   const name = String(form.get("name") || "").trim();
   const compulsory = form.get("compulsory") === "on";
+  const stage: Stage = form.get("stage") === "early_years" ? "early_years" : "standard";
   if (!name) return NextResponse.redirect(new URL("/subjects/new?error=1", origin), 303);
 
-  if (id) await updateSubject(id, { name, compulsory });
-  else await createSubject({ name, compulsory });
+  if (id) await updateSubject(id, { name, compulsory, stage });
+  else await createSubject({ name, compulsory, stage });
 
   return NextResponse.redirect(new URL("/subjects", origin), 303);
 }

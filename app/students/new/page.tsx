@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-header";
 import { StudentForm } from "@/components/student-form";
-import { getSettings, listSubjects } from "@/lib/db";
+import { getSettings, listClasses, listSubjects } from "@/lib/db";
 
 export default async function NewStudentPage() {
-  const [settings, subjects] = await Promise.all([getSettings(), listSubjects()]);
+  const [settings, subjects, classes] = await Promise.all([getSettings(), listSubjects(), listClasses()]);
 
   return (
     <AppShell current="/students" period={{ year: settings.current_year, term: settings.current_term }}>
@@ -19,7 +19,7 @@ export default async function NewStudentPage() {
           </Link>
         }
       />
-      <StudentForm subjects={subjects} />
+      <StudentForm subjects={subjects} classes={classes} />
     </AppShell>
   );
 }

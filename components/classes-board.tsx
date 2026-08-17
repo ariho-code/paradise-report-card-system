@@ -47,7 +47,14 @@ export function ClassesBoard({
                 key={item.id}
                 className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-4 py-4 last:border-b-0 sm:px-5"
               >
-                <p className="font-[family-name:var(--font-display)] text-xl text-navy">{item.name}</p>
+                <div className="min-w-0">
+                  <p className="font-[family-name:var(--font-display)] text-xl text-navy">{item.name}</p>
+                  {item.level === "early_years" ? (
+                    <span className="mt-1 inline-block rounded-full bg-brass/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7a5c00]">
+                      Early Years · comments
+                    </span>
+                  ) : null}
+                </div>
                 <div className="flex w-full gap-2 sm:w-auto">
                   <button type="button" onClick={() => setOpen(item)} className={`${btnSecondary} flex-1 sm:flex-none`}>
                     Edit

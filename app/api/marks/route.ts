@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/auth";
-import { getOrCreateAssessment, saveAssessmentBundle } from "@/lib/db";
+import { getOrCreateAssessment, saveAssessmentBundle, saveEarlyYearsBundle } from "@/lib/db";
 import { parseMark, suggestedGradeFromPapers } from "@/lib/grades";
 import { requestOrigin } from "@/lib/http";
 import { DEFAULT_TRAITS } from "@/lib/types";
@@ -18,6 +18,21 @@ export async function POST(request: NextRequest) {
   const subjectIds = form.getAll("subjectId").map(String);
 
   const assessment = await getOrCreateAssessment(studentId, year, term);
+  const qs = new URLSearchParams({ year, term });
+
+  if (String(form.get("mode") || "") === "early_years") {
+    await saveEarlyYearsBundle({
+      assessmentId: assessment.id,
+      teacherComment,
+      areas: subjectIds.map((subjectId) => ({
+        subjectId,
+        progress: String(form.get(`progress_${subjectId}`) || ""),
+        award: String(form.get(`award_${subjectId}`) || ""),
+      })),
+    });
+    return NextResponse.redirect(new URL(`/reports/print/${studentId}?${qs}`, origin), 303);
+  }
+
   const marks = subjectIds.map((subjectId) => {
     const missed = form.get(`missed_${subjectId}`) === "on";
     const test = parseMark(form.get(`test_${subjectId}`));
@@ -40,6 +55,5 @@ export async function POST(request: NextRequest) {
     characters,
   });
 
-  const qs = new URLSearchParams({ year, term });
   return NextResponse.redirect(new URL(`/reports/print/${studentId}?${qs}`, origin), 303);
 }
