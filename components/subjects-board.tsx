@@ -67,6 +67,7 @@ export function SubjectsBoard({ subjects }: { subjects: Subject[] }) {
                           <p className="font-[family-name:var(--font-display)] text-xl text-navy">{subject.name}</p>
                           <p className="text-xs uppercase tracking-[0.14em] text-ink/50">
                             {subject.compulsory ? "Compulsory" : "Optional"}
+                            {group.stage === "standard" && subject.graded === false ? " · Comment only" : ""}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:flex">

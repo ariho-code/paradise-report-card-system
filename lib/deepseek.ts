@@ -115,7 +115,9 @@ export async function generateComments(input: {
   term: string;
   summary: string;
   marks: Array<{ subject: string; test: string; eot: string; grade: string }>;
+  skills?: string[];
 }): Promise<CommentDraft> {
+  const skills = input.skills || [];
   const markLines = input.marks
     .map((row) => `${row.subject}: Test ${row.test || "—"}, EOT ${row.eot || "—"}, Grade ${row.grade}`)
     .join("\n");
@@ -131,6 +133,9 @@ Period: ${input.term} ${input.year}
 
 Marks:
 ${markLines || "No marks entered yet."}
+
+Skills (taught and commented on, never marked or graded):
+${skills.length ? skills.map((name) => `- ${name}`).join("\n") : "None."}
 
 Teacher summary:
 ${input.summary.trim() || "No extra note. Use the marks only."}
@@ -150,7 +155,8 @@ Return JSON only:
 
 Each character remark is a short teacher-written phrase (3–8 words), not a locked slogan.
 The teacherComment must be brief - exactly 2-3 sentences maximum, under 150 characters total. Keep it concise and impactful.
-For markComments, provide a brief 2-4 word comment for each subject based on the grade. Keys should be exact subject names from the marks list.`;
+For markComments, provide a brief 2-4 word comment for each subject based on the grade. Keys should be exact subject names from the marks list.
+Also add one entry to markComments for each skill listed above, keyed by its exact name. A skill has no grade, so write 6-12 words on what the learner does in it — never mention marks, grades or scores for a skill.`;
 
   const parsed = (await askDeepSeek(prompt)) as {
     characters?: Record<string, string>;

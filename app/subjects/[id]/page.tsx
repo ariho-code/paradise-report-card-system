@@ -39,6 +39,17 @@ export default async function EditSubjectPage({
             <option value="early_years">Early Years · comment report</option>
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.16em] text-brass">Assessed by</span>
+          <select
+            name="graded"
+            defaultValue={subject.graded === false ? "comment" : "marks"}
+            className="w-full border border-rule bg-parchment px-3 py-2"
+          >
+            <option value="marks">Marks · test, end of term, grade</option>
+            <option value="comment">Comment only · a skill such as Chess or Music</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="compulsory" defaultChecked={subject.compulsory} />
           Compulsory for every learner

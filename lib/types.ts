@@ -35,6 +35,8 @@ export type Subject = {
   compulsory: boolean;
   sort_order: number;
   stage: Stage;
+  /** false marks a skill: the teacher writes a comment instead of marks. */
+  graded: boolean;
 };
 
 export type SchoolClass = {
@@ -56,6 +58,7 @@ export type Mark = {
   assessment_id: string;
   subject_id: string;
   subject_name?: string;
+  graded?: boolean;
   test: number | null;
   eot: number | null;
   grade: string;

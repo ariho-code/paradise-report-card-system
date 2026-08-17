@@ -172,8 +172,16 @@ async function applySchema() {
  * both branches — anything left in applySchema's tail never reaches a live DB.
  */
 async function ensureUpgrades() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS applied_migrations (
+      key TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
   await sql`ALTER TABLE classes ADD COLUMN IF NOT EXISTS level TEXT NOT NULL DEFAULT 'standard'`;
   await sql`ALTER TABLE subjects ADD COLUMN IF NOT EXISTS stage TEXT NOT NULL DEFAULT 'standard'`;
+  await sql`ALTER TABLE subjects ADD COLUMN IF NOT EXISTS graded BOOLEAN NOT NULL DEFAULT true`;
 
   // Subject names were globally unique, which would stop Early Years from
   // tracking "Mathematics" while a Grade class already has the subject.
@@ -201,6 +209,42 @@ async function ensureUpgrades() {
 
   await seedEarlyYearsAreas();
   await splitPersonalSocialArea();
+  await once("skills-chess-music", markSkillSubjects);
+}
+
+/**
+ * Runs a one-off data change exactly once per database. Data migrations must
+ * not re-apply on later cold starts, or they would silently overwrite whatever
+ * the school has since changed on the Subjects page.
+ */
+async function once(key: string, run: () => Promise<void>) {
+  const claimed = await sql`
+    INSERT INTO applied_migrations (key) VALUES (${key})
+    ON CONFLICT (key) DO NOTHING
+    RETURNING key
+  `;
+  if (claimed.length === 0) return;
+  await run();
+}
+
+/**
+ * Chess and Music are taught as skills: the teacher writes a comment rather
+ * than entering marks. Music already exists as a subject, so it is converted
+ * rather than duplicated; its marks are left in place and reappear if the
+ * school ever switches it back to being graded.
+ */
+async function markSkillSubjects() {
+  await sql`
+    UPDATE subjects SET graded = false
+    WHERE stage = 'standard' AND name IN ('Music', 'Chess')
+  `;
+
+  const rows = await sql<{ max: number }[]>`SELECT COALESCE(MAX(sort_order), 0) AS max FROM subjects`;
+  await sql`
+    INSERT INTO subjects (id, name, compulsory, sort_order, stage, graded)
+    VALUES (${crypto.randomUUID()}, 'Chess', false, ${rows[0].max + 1}, 'standard', false)
+    ON CONFLICT (name, stage) DO NOTHING
+  `;
 }
 
 /**
@@ -669,7 +713,7 @@ export async function deleteStudent(id: string) {
 export async function listSubjects(): Promise<Subject[]> {
   await ensureSchema();
   return sql<Subject[]>`
-    SELECT id, name, compulsory, sort_order, stage
+    SELECT id, name, compulsory, sort_order, stage, graded
     FROM subjects
     ORDER BY sort_order, name
   `;
@@ -678,30 +722,30 @@ export async function listSubjects(): Promise<Subject[]> {
 export async function getSubject(id: string): Promise<Subject | null> {
   await ensureSchema();
   const rows = await sql<Subject[]>`
-    SELECT id, name, compulsory, sort_order, stage FROM subjects WHERE id = ${id}
+    SELECT id, name, compulsory, sort_order, stage, graded FROM subjects WHERE id = ${id}
   `;
   return rows[0] ?? null;
 }
 
-export async function createSubject(input: { name: string; compulsory: boolean; stage: Stage }) {
+type SubjectInput = { name: string; compulsory: boolean; stage: Stage; graded: boolean };
+
+export async function createSubject(input: SubjectInput) {
   await ensureSchema();
   const rows = await sql<{ max: number }[]>`SELECT COALESCE(MAX(sort_order), 0) AS max FROM subjects`;
   const id = crypto.randomUUID();
   await sql`
-    INSERT INTO subjects (id, name, compulsory, sort_order, stage)
-    VALUES (${id}, ${input.name}, ${input.compulsory}, ${rows[0].max + 1}, ${input.stage})
+    INSERT INTO subjects (id, name, compulsory, sort_order, stage, graded)
+    VALUES (${id}, ${input.name}, ${input.compulsory}, ${rows[0].max + 1}, ${input.stage}, ${input.graded})
   `;
   return id;
 }
 
-export async function updateSubject(
-  id: string,
-  input: { name: string; compulsory: boolean; stage: Stage },
-) {
+export async function updateSubject(id: string, input: SubjectInput) {
   await ensureSchema();
   await sql`
     UPDATE subjects
-    SET name = ${input.name}, compulsory = ${input.compulsory}, stage = ${input.stage}
+    SET name = ${input.name}, compulsory = ${input.compulsory},
+        stage = ${input.stage}, graded = ${input.graded}
     WHERE id = ${id}
   `;
 }
@@ -718,7 +762,7 @@ export async function deleteSubject(id: string) {
 export async function subjectsForStudent(studentId: string, stage: Stage): Promise<Subject[]> {
   await ensureSchema();
   return sql<Subject[]>`
-    SELECT s.id, s.name, s.compulsory, s.sort_order, s.stage
+    SELECT s.id, s.name, s.compulsory, s.sort_order, s.stage, s.graded
     FROM subjects s
     WHERE s.stage = ${stage}
       AND (
@@ -782,7 +826,7 @@ export async function listMarks(assessmentId: string): Promise<Mark[]> {
   // report without their saved marks being destroyed — restore the subject and
   // the marks come back.
   return sql<Mark[]>`
-    SELECT m.assessment_id, m.subject_id, s.name AS subject_name,
+    SELECT m.assessment_id, m.subject_id, s.name AS subject_name, s.graded,
            m.test::float8 AS test, m.eot::float8 AS eot,
            m.grade, m.missed, m.comment
     FROM marks m

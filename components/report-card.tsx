@@ -72,6 +72,11 @@ export function ReportCard({
   characters: CharacterMark[];
   teacherComment: string;
 }) {
+  // Skills carry a written comment instead of marks, so they print in their
+  // own block rather than as a row of dashes in the marks table.
+  const graded = marks.filter((row) => row.graded !== false);
+  const skills = marks.filter((row) => row.graded === false);
+
   return (
     <article className="print-sheet">
       <img className="print-watermark" src="/logo.jpg" alt="" />
@@ -92,14 +97,14 @@ export function ReportCard({
               </tr>
             </thead>
             <tbody>
-              {marks.length === 0 ? (
+              {graded.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ padding: 20, textAlign: "center", color: MUTED, fontStyle: "italic" }}>
                     No marks have been entered for this period.
                   </td>
                 </tr>
               ) : (
-                marks.map((row, i) => (
+                graded.map((row, i) => (
                   <tr key={row.subject_id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
                     <td style={{ padding: "3px 8px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
                       {row.subject_name}
@@ -118,6 +123,20 @@ export function ReportCard({
             </tbody>
           </table>
         </section>
+
+        {skills.length > 0 ? (
+          <section style={panel}>
+            <div style={panelHeader}>Skills</div>
+            {skills.map((row) => (
+              <div key={row.subject_id} style={rowLine}>
+                <strong style={{ color: NAVY, whiteSpace: "nowrap" }}>{row.subject_name}</strong>
+                <span style={{ fontStyle: "italic", color: MUTED, textAlign: "right" }}>
+                  {row.comment || "—"}
+                </span>
+              </div>
+            ))}
+          </section>
+        ) : null}
 
         <div className="print-grow" />
 

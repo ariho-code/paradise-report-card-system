@@ -12,6 +12,7 @@ type RowState = {
   grade: string;
   missed: boolean;
   comment: string;
+  graded: boolean;
 };
 
 function toNum(value: string) {
@@ -53,11 +54,16 @@ export function MarksForm({
         grade: saved?.grade || "U",
         missed: Boolean(saved?.missed),
         comment: saved?.comment || "",
+        graded: subject.graded !== false,
       };
     });
   }, [subjects, marks]);
 
   const [rows, setRows] = useState(initialRows);
+  // Skills are commented on, not marked, so they get their own card below the
+  // ledger. Indexes are kept so patch() still targets the right row.
+  const gradedRows = rows.map((row, index) => ({ row, index })).filter((r) => r.row.graded);
+  const skillRows = rows.map((row, index) => ({ row, index })).filter((r) => !r.row.graded);
   const [comment, setComment] = useState(teacherComment);
   const [summary, setSummary] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -96,12 +102,13 @@ export function MarksForm({
           year,
           term,
           summary,
-          marks: rows.map((row) => ({
+          marks: gradedRows.map(({ row }) => ({
             subject: row.name,
             test: row.missed ? "" : row.test,
             eot: row.missed ? "" : row.eot,
             grade: row.missed ? "U" : row.grade,
           })),
+          skills: skillRows.map(({ row }) => row.name),
         }),
       });
       const data = (await response.json()) as {
@@ -164,7 +171,7 @@ export function MarksForm({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => (
+              {gradedRows.map(({ row, index }) => (
                 <tr key={row.subjectId} className="border-t border-rule">
                   <td className="px-4 py-3 font-medium text-navy">
                     {row.name}
@@ -248,6 +255,39 @@ export function MarksForm({
           </table>
         </div>
       </div>
+
+      {skillRows.length > 0 ? (
+        <div className="overflow-hidden rounded-2xl border border-rule bg-vellum">
+          <div className="border-b border-rule px-5 py-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-brass">Skills</p>
+            <h3 className="font-[family-name:var(--font-display)] text-xl text-navy">
+              Comment only, no marks
+            </h3>
+            <p className="text-sm text-ink/60">
+              These print in their own block on the report. Leave one blank to keep it off the sheet.
+            </p>
+          </div>
+          <ul className="divide-y divide-rule">
+            {skillRows.map(({ row, index }) => (
+              <li key={row.subjectId} className="px-4 py-4 sm:px-5">
+                <input type="hidden" name="subjectId" value={row.subjectId} />
+                <label className="block">
+                  <span className="mb-1 block font-[family-name:var(--font-display)] text-lg text-navy">
+                    {row.name}
+                  </span>
+                  <input
+                    name={`comment_${row.subjectId}`}
+                    value={row.comment}
+                    onChange={(e) => patch(index, { comment: e.target.value })}
+                    placeholder="How is the learner doing in this skill?"
+                    className="w-full rounded-xl border border-rule bg-parchment px-3 py-2 text-sm"
+                  />
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="rounded-2xl border border-rule bg-vellum p-5">
         <h3 className="text-[11px] uppercase tracking-[0.2em] text-brass">Comments</h3>

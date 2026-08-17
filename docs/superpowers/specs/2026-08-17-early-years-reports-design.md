@@ -81,6 +81,23 @@ old name so it runs exactly once and never renumbers on a later cold start.
 Awards are the three words on the school's printed key: `Good`, `Very Good`,
 `Impressive`, plus blank for "not yet awarded".
 
+### Skills — comment-only subjects
+
+Some subjects in the Grade classes are taught as skills: Chess and Music are
+commented on, never marked. `subjects.graded` (default true) marks these. It is
+orthogonal to `stage` — only Standard subjects choose, since Early Years is
+already all comments.
+
+Skills reuse the `marks` table, storing only a comment. They are filtered out of
+the marks table on the report and printed in their own Skills block beneath it,
+styled like the Character panel; a skill left blank stays off the sheet
+entirely. The marks ledger likewise splits them into a separate card with just a
+comment box.
+
+`markSkillSubjects` converts Music rather than duplicating it, leaving its marks
+in place so they reappear if the school switches it back to graded, and adds
+Chess as an optional skill.
+
 ### Migration safety
 
 `applySchema` in `lib/db.ts` early-returns when the `settings` table already
@@ -90,6 +107,11 @@ branches of `applySchema`, alongside the existing `ensureClassesTable()`.
 
 `ensureSchema()` is already awaited by every data accessor, so the upgrade lands
 on the first request after deploy with no manual step.
+
+Schema changes are written to be safe to re-run. One-off **data** changes are
+not, so they go through `once(key, fn)`, backed by an `applied_migrations`
+table: re-running would otherwise overwrite whatever the school has since
+changed on the Subjects page, on every serverless cold start.
 
 ### Subject resolution
 

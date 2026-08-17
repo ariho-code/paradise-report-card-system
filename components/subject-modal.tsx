@@ -15,6 +15,7 @@ export function SubjectModal({
   onClose: () => void;
 }) {
   const [stage, setStage] = useState<Stage>(subject?.stage ?? defaultStage);
+  const [graded, setGraded] = useState(subject?.graded !== false);
   const earlyYears = stage === "early_years";
 
   return (
@@ -62,6 +63,43 @@ export function SubjectModal({
             className={fieldClass}
           />
         </label>
+
+        {!earlyYears ? (
+          <fieldset>
+            <legend className="mb-2 text-[11px] uppercase tracking-[0.16em] text-brass">Assessed by</legend>
+            <input type="hidden" name="graded" value={graded ? "marks" : "comment"} />
+            <div className="grid gap-2">
+              {[
+                { value: true, title: "Marks", blurb: "Test and end-of-term marks with a letter grade." },
+                { value: false, title: "Comment only", blurb: "A skill such as Chess or Music. Prints in its own block, no marks." },
+              ].map((option) => {
+                const active = graded === option.value;
+                return (
+                  <button
+                    key={option.title}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setGraded(option.value)}
+                    className={`rounded-xl border px-4 py-3 text-left transition ${
+                      active ? "border-navy bg-white ring-1 ring-navy" : "border-rule bg-parchment hover:border-navy/40"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                          active ? "border-navy bg-navy" : "border-rule-dark bg-transparent"
+                        }`}
+                      />
+                      <span className="text-sm font-semibold text-navy">{option.title}</span>
+                    </span>
+                    <span className="mt-1 block pl-[22px] text-xs text-ink/60">{option.blurb}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
 
         <label className="flex items-center gap-2 rounded-xl border border-rule bg-parchment px-3 py-2.5 text-sm">
           <input type="checkbox" name="compulsory" defaultChecked={subject?.compulsory ?? true} />

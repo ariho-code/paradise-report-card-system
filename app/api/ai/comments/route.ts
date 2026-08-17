@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     term?: string;
     summary?: string;
     marks?: Array<{ subject: string; test: string; eot: string; grade: string }>;
+    skills?: string[];
     areas?: Array<{ area: string; award: string }>;
   };
 
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       term: String(body.term || ""),
       summary: String(body.summary || ""),
       marks: body.marks || [],
+      skills: body.skills || [],
     });
     return NextResponse.json(draft);
   } catch (error) {
