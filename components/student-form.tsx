@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { SubjectPicker, classDefaults } from "@/components/subject-picker";
 import type { SchoolClass, Stage, Student, Subject } from "@/lib/types";
 
 export function StudentForm({
@@ -13,19 +14,39 @@ export function StudentForm({
   classes?: SchoolClass[];
 }) {
   const [grade, setGrade] = useState(student?.grade || "");
-  const selected = new Set(student?.optional_subject_ids || []);
-  const removed = new Set(student?.excluded_subject_ids || []);
+  const [overrides, setOverrides] = useState<Record<string, Set<string>>>({});
 
   const names = classes.map((item) => item.name);
   if (student?.grade && !names.includes(student.grade)) names.unshift(student.grade);
 
-  const stage: Stage =
-    classes.find((item) => item.name === grade)?.level === "early_years" ? "early_years" : "standard";
+  const schoolClass = classes.find((item) => item.name === grade);
+  const stage: Stage = schoolClass?.level === "early_years" ? "early_years" : "standard";
   const earlyYears = stage === "early_years";
-  const inStage = subjects.filter((subject) => subject.stage === stage);
-  const optionals = inStage.filter((subject) => !subject.compulsory);
-  const compulsory = inStage.filter((subject) => subject.compulsory);
+  const inStage = useMemo(
+    () => subjects.filter((subject) => subject.stage === stage),
+    [subjects, stage],
+  );
   const noun = earlyYears ? "areas" : "subjects";
+
+  const byClass = useMemo(() => classDefaults(inStage, schoolClass), [inStage, schoolClass]);
+  const initial = useMemo(() => {
+    if (grade !== student?.grade) return byClass;
+    const next = new Set(byClass);
+    for (const id of student?.optional_subject_ids || []) next.add(id);
+    for (const id of student?.excluded_subject_ids || []) next.delete(id);
+    return next;
+  }, [byClass, grade, student]);
+
+  const taken = overrides[grade] ?? initial;
+
+  function toggle(id: string, next: boolean) {
+    setOverrides((current) => {
+      const base = new Set(current[grade] ?? initial);
+      if (next) base.add(id);
+      else base.delete(id);
+      return { ...current, [grade]: base };
+    });
+  }
 
   return (
     <form action="/api/students" method="post" className="max-w-xl space-y-5 border border-rule bg-vellum p-6">
@@ -75,45 +96,16 @@ export function StudentForm({
         </p>
       ) : null}
 
-      {optionals.length > 0 ? (
-        <fieldset>
-          <legend className="mb-2 text-[11px] uppercase tracking-[0.18em] text-brass">Optional {noun}</legend>
-          <div className="space-y-2">
-            {optionals.map((subject) => (
-              <label key={subject.id} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="optional"
-                  value={subject.id}
-                  defaultChecked={selected.has(subject.id)}
-                />
-                {subject.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ) : null}
-
-      {compulsory.length > 0 ? (
-        <fieldset>
-          <legend className="mb-1 text-[11px] uppercase tracking-[0.18em] text-brass">Not taken by this learner</legend>
-          <p className="mb-2 text-xs text-ink/55">
-            Tick one to drop it from this child&apos;s report. Nobody else is affected.
-          </p>
-          <div className="space-y-2">
-            {compulsory.map((subject) => (
-              <label key={subject.id} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="excluded"
-                  value={subject.id}
-                  defaultChecked={removed.has(subject.id)}
-                />
-                {subject.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+      {grade ? (
+        <SubjectPicker
+          subjects={inStage}
+          taken={taken}
+          onToggle={toggle}
+          defaults={byClass}
+          legend={earlyYears ? "Areas this learner tracks" : "Subjects this learner takes"}
+          hint={`Ticked to match ${grade}. Change one only if this child differs from the rest of the class.`}
+          emptyNote={`No ${noun} for this class type yet. Add them on the Subjects page.`}
+        />
       ) : null}
 
       <button type="submit" className="bg-navy px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-vellum">

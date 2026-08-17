@@ -42,7 +42,7 @@ export default async function ClassPrintPage({
           settings={settings}
           year={period.year}
           term={period.term}
-          areas={await subjectsForStudent(student.id, "early_years")}
+          areas={await subjectsForStudent(student.id)}
           progress={assessment ? await listAreaProgress(assessment.id) : []}
           teacherComment={assessment?.teacher_comment || ""}
         />,

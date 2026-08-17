@@ -35,7 +35,7 @@ export default async function PrintReportPage({
   const earlyYears = (await stageForGrade(student.grade)) === "early_years";
   const marks = assessment && !earlyYears ? await listMarks(assessment.id) : [];
   const characters = assessment && !earlyYears ? await listCharacterMarks(assessment.id) : [];
-  const areas = earlyYears ? await subjectsForStudent(student.id, "early_years") : [];
+  const areas = earlyYears ? await subjectsForStudent(student.id) : [];
   const progress = assessment && earlyYears ? await listAreaProgress(assessment.id) : [];
   const q = periodQuery(period.year, period.term);
 

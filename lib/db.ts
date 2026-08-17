@@ -198,6 +198,22 @@ async function ensureUpgrades() {
   `;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS class_optionals (
+      class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+      PRIMARY KEY (class_id, subject_id)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS class_exclusions (
+      class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+      PRIMARY KEY (class_id, subject_id)
+    )
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS area_progress (
       assessment_id TEXT NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
       subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
@@ -207,9 +223,56 @@ async function ensureUpgrades() {
     )
   `;
 
+  await ensureStudentSubjectsView();
   await seedEarlyYearsAreas();
   await splitPersonalSocialArea();
   await once("skills-chess-music", markSkillSubjects);
+}
+
+/**
+ * Which subjects each learner actually takes, defined once so the marks form,
+ * the marks report and the Early Years report can never disagree.
+ *
+ * The class sets the default and the learner's own ticks win over it:
+ *
+ *   class default = compulsory, plus what the class adds, minus what it drops
+ *   learner       = class default, plus their additions, minus their removals
+ *
+ * Stage is part of the rule, so a Grade learner can never surface an Early
+ * Years area and vice versa. Learners whose class name matches no class row
+ * fall back to the standard compulsory list rather than losing every subject.
+ */
+async function ensureStudentSubjectsView() {
+  await sql`
+    CREATE OR REPLACE VIEW student_subjects AS
+    SELECT st.id AS student_id, s.id AS subject_id
+    FROM students st
+    LEFT JOIN classes c ON c.name = st.grade
+    JOIN subjects s ON s.stage = COALESCE(c.level, 'standard')
+    WHERE (
+      (
+        (
+          s.compulsory = true
+          OR EXISTS (
+            SELECT 1 FROM class_optionals co
+            WHERE co.class_id = c.id AND co.subject_id = s.id
+          )
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM class_exclusions ce
+          WHERE ce.class_id = c.id AND ce.subject_id = s.id
+        )
+      )
+      OR EXISTS (
+        SELECT 1 FROM student_optionals so
+        WHERE so.student_id = st.id AND so.subject_id = s.id
+      )
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM student_exclusions se
+      WHERE se.student_id = st.id AND se.subject_id = s.id
+    )
+  `;
 }
 
 /**
@@ -539,9 +602,31 @@ export async function removeYear(name: string) {
 
 export async function listClasses(): Promise<SchoolClass[]> {
   await ensureSchema();
-  return sql<SchoolClass[]>`
+  const classes = await sql<SchoolClass[]>`
     SELECT id, name, sort_order, level FROM classes ORDER BY sort_order, name
   `;
+  const added = await sql<{ class_id: string; subject_id: string }[]>`
+    SELECT class_id, subject_id FROM class_optionals
+  `;
+  const dropped = await sql<{ class_id: string; subject_id: string }[]>`
+    SELECT class_id, subject_id FROM class_exclusions
+  `;
+  const group = (rows: { class_id: string; subject_id: string }[]) => {
+    const map = new Map<string, string[]>();
+    for (const row of rows) {
+      const list = map.get(row.class_id) ?? [];
+      list.push(row.subject_id);
+      map.set(row.class_id, list);
+    }
+    return map;
+  };
+  const addedBy = group(added);
+  const droppedBy = group(dropped);
+  return classes.map((item) => ({
+    ...item,
+    optional_subject_ids: addedBy.get(item.id) ?? [],
+    excluded_subject_ids: droppedBy.get(item.id) ?? [],
+  }));
 }
 
 export async function getClass(id: string) {
@@ -552,7 +637,41 @@ export async function getClass(id: string) {
   return rows[0] ?? null;
 }
 
-export async function createClass(name: string, level: Stage = "standard") {
+/**
+ * Stores which subjects a class takes as a difference from the curriculum
+ * default, so adding a compulsory subject later reaches every class that has
+ * not deliberately dropped it.
+ */
+async function writeClassSubjects(classId: string, stage: Stage, taken: string[] | null) {
+  await sql`DELETE FROM class_optionals WHERE class_id = ${classId}`;
+  await sql`DELETE FROM class_exclusions WHERE class_id = ${classId}`;
+  if (!taken) return;
+
+  const inStage = await sql<{ id: string; compulsory: boolean }[]>`
+    SELECT id, compulsory FROM subjects WHERE stage = ${stage}
+  `;
+  const takenSet = new Set(taken);
+  for (const subject of inStage) {
+    if (takenSet.has(subject.id) && !subject.compulsory) {
+      await sql`
+        INSERT INTO class_optionals (class_id, subject_id) VALUES (${classId}, ${subject.id})
+        ON CONFLICT DO NOTHING
+      `;
+    }
+    if (!takenSet.has(subject.id) && subject.compulsory) {
+      await sql`
+        INSERT INTO class_exclusions (class_id, subject_id) VALUES (${classId}, ${subject.id})
+        ON CONFLICT DO NOTHING
+      `;
+    }
+  }
+}
+
+export async function createClass(
+  name: string,
+  level: Stage = "standard",
+  taken: string[] | null = null,
+) {
   await ensureSchema();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Class name is required.");
@@ -562,10 +681,16 @@ export async function createClass(name: string, level: Stage = "standard") {
     INSERT INTO classes (id, name, sort_order, level)
     VALUES (${id}, ${trimmed}, ${rows[0].max + 1}, ${level})
   `;
+  await writeClassSubjects(id, level, taken);
   return id;
 }
 
-export async function updateClass(id: string, name: string, level: Stage = "standard") {
+export async function updateClass(
+  id: string,
+  name: string,
+  level: Stage = "standard",
+  taken: string[] | null = null,
+) {
   await ensureSchema();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Class name is required.");
@@ -575,6 +700,7 @@ export async function updateClass(id: string, name: string, level: Stage = "stan
   if (current.name !== trimmed) {
     await sql`UPDATE students SET grade = ${trimmed} WHERE grade = ${current.name}`;
   }
+  await writeClassSubjects(id, level, taken);
 }
 
 /**
@@ -660,26 +786,42 @@ type StudentInput = {
   grade: string;
   section: string;
   adviser: string;
-  optional_subject_ids: string[];
-  excluded_subject_ids: string[];
+  /** Subject ids ticked for this learner, or null to leave them on the class default. */
+  taken_subject_ids: string[] | null;
 };
 
+/**
+ * Stores only where the learner differs from their class, so a later change to
+ * the class reaches them unless they were deliberately set apart.
+ */
 async function writeStudentSubjects(id: string, input: StudentInput) {
   await sql`DELETE FROM student_optionals WHERE student_id = ${id}`;
-  for (const subjectId of input.optional_subject_ids) {
-    await sql`
-      INSERT INTO student_optionals (student_id, subject_id)
-      VALUES (${id}, ${subjectId})
-      ON CONFLICT DO NOTHING
-    `;
-  }
   await sql`DELETE FROM student_exclusions WHERE student_id = ${id}`;
-  for (const subjectId of input.excluded_subject_ids) {
-    await sql`
-      INSERT INTO student_exclusions (student_id, subject_id)
-      VALUES (${id}, ${subjectId})
-      ON CONFLICT DO NOTHING
-    `;
+  if (!input.taken_subject_ids) return;
+
+  const stage = await stageForGrade(input.grade);
+  const byClass = await subjectsForClass(input.grade);
+  const classTaken = new Set(byClass.map((s) => s.id));
+  const inStage = await sql<{ id: string }[]>`
+    SELECT id FROM subjects WHERE stage = ${stage}
+  `;
+  const takenSet = new Set(input.taken_subject_ids);
+
+  for (const subject of inStage) {
+    if (takenSet.has(subject.id) && !classTaken.has(subject.id)) {
+      await sql`
+        INSERT INTO student_optionals (student_id, subject_id)
+        VALUES (${id}, ${subject.id})
+        ON CONFLICT DO NOTHING
+      `;
+    }
+    if (!takenSet.has(subject.id) && classTaken.has(subject.id)) {
+      await sql`
+        INSERT INTO student_exclusions (student_id, subject_id)
+        VALUES (${id}, ${subject.id})
+        ON CONFLICT DO NOTHING
+      `;
+    }
   }
 }
 
@@ -755,24 +897,38 @@ export async function deleteSubject(id: string) {
   await sql`DELETE FROM subjects WHERE id = ${id}`;
 }
 
-/**
- * The one place a learner's list is resolved. Filters to the stage of the class
- * the learner sits in, then drops anything the teacher marked as not taken.
- */
-export async function subjectsForStudent(studentId: string, stage: Stage): Promise<Subject[]> {
+/** The subjects a learner takes, per the student_subjects rule. */
+export async function subjectsForStudent(studentId: string): Promise<Subject[]> {
   await ensureSchema();
   return sql<Subject[]>`
     SELECT s.id, s.name, s.compulsory, s.sort_order, s.stage, s.graded
     FROM subjects s
+    JOIN student_subjects ss ON ss.subject_id = s.id
+    WHERE ss.student_id = ${studentId}
+    ORDER BY s.sort_order, s.name
+  `;
+}
+
+/**
+ * The subjects a class takes by default, before any per-learner change.
+ * Used to seed the tick-boxes and to work out what a learner's ticks changed.
+ */
+export async function subjectsForClass(grade: string): Promise<Subject[]> {
+  await ensureSchema();
+  const stage = await stageForGrade(grade);
+  return sql<Subject[]>`
+    SELECT s.id, s.name, s.compulsory, s.sort_order, s.stage, s.graded
+    FROM subjects s
+    LEFT JOIN classes c ON c.name = ${grade}
     WHERE s.stage = ${stage}
       AND (
         s.compulsory = true
-        OR s.id IN (
-          SELECT subject_id FROM student_optionals WHERE student_id = ${studentId}
+        OR EXISTS (
+          SELECT 1 FROM class_optionals co WHERE co.class_id = c.id AND co.subject_id = s.id
         )
       )
-      AND s.id NOT IN (
-        SELECT subject_id FROM student_exclusions WHERE student_id = ${studentId}
+      AND NOT EXISTS (
+        SELECT 1 FROM class_exclusions ce WHERE ce.class_id = c.id AND ce.subject_id = s.id
       )
     ORDER BY s.sort_order, s.name
   `;
@@ -822,9 +978,8 @@ export async function getAssessment(studentId: string, year: string, term: strin
 
 export async function listMarks(assessmentId: string): Promise<Mark[]> {
   await ensureSchema();
-  // Subjects the teacher has since removed from this learner drop off the
-  // report without their saved marks being destroyed — restore the subject and
-  // the marks come back.
+  // A subject dropped at class or learner level falls off the report without
+  // its saved marks being destroyed — restore the subject and they come back.
   return sql<Mark[]>`
     SELECT m.assessment_id, m.subject_id, s.name AS subject_name, s.graded,
            m.test::float8 AS test, m.eot::float8 AS eot,
@@ -832,10 +987,9 @@ export async function listMarks(assessmentId: string): Promise<Mark[]> {
     FROM marks m
     JOIN subjects s ON s.id = m.subject_id
     JOIN assessments a ON a.id = m.assessment_id
+    JOIN student_subjects ss
+      ON ss.student_id = a.student_id AND ss.subject_id = s.id
     WHERE m.assessment_id = ${assessmentId}
-      AND s.id NOT IN (
-        SELECT subject_id FROM student_exclusions WHERE student_id = a.student_id
-      )
     ORDER BY s.sort_order, s.name
   `;
 }
@@ -847,10 +1001,9 @@ export async function listAreaProgress(assessmentId: string): Promise<AreaProgre
     FROM area_progress p
     JOIN subjects s ON s.id = p.subject_id
     JOIN assessments a ON a.id = p.assessment_id
+    JOIN student_subjects ss
+      ON ss.student_id = a.student_id AND ss.subject_id = s.id
     WHERE p.assessment_id = ${assessmentId}
-      AND s.id NOT IN (
-        SELECT subject_id FROM student_exclusions WHERE student_id = a.student_id
-      )
     ORDER BY s.sort_order, s.name
   `;
 }

@@ -24,9 +24,6 @@ learner may not sit a subject the register calls compulsory.
    existing report changes appearance.
 
 ## Non-goals
-
-- Class-level subject removal defaults (per-learner only; revisit if the ticking
-  becomes tedious).
 - Character traits on the Early Years sheet — not on the school's printed form.
 - Any change to how Grade 1–7 marks are entered, graded, or printed.
 
@@ -115,18 +112,26 @@ changed on the Subjects page, on every serverless cold start.
 
 ### Subject resolution
 
-`subjectsForStudent` is the single place that resolves a learner's list. It
-becomes stage-aware and exclusion-aware:
+Assignment has two layers. The class sets the default and the learner's own
+ticks win over it:
 
 ```
-stage = the level of the class the learner belongs to
-AND (compulsory OR chosen as an optional for this learner)
-AND NOT excluded for this learner
+class default = compulsory, plus what the class adds, minus what it drops
+learner       = class default, plus their additions, minus their removals
 ```
 
-The learner's class level comes from matching `students.grade` to `classes.name`,
-defaulting to `standard` when no class row matches — an unmatched name must not
-strand a learner without subjects.
+Both layers store a *difference* from the level above rather than a full list,
+so adding a compulsory subject later reaches every class and learner that has
+not deliberately opted out.
+
+The rule lives in one place — a `student_subjects` view — because the marks
+form, the marks report and the Early Years report must never disagree about
+what a learner takes. Stage is part of the rule, so a Grade learner can never
+surface an Early Years area. A learner whose class name matches no class row
+falls back to the standard compulsory list rather than losing every subject.
+
+`classes.level` is matched to `students.grade` by name, since students store the
+class name rather than an id; `updateClass` already cascades renames.
 
 ## Components
 
@@ -170,9 +175,16 @@ only the per-area rows live in the new table.
 
 - **Classes** — modal gains Standard / Early Years; the list badges Early Years rows.
 - **Subjects** — splits into two labelled groups; modal picks the group.
-- **Edit student** — a "Not taken by this learner" fieldset lists that class's
-  compulsory subjects as tick-boxes, re-filtering live when the class dropdown
-  changes so a learner never sees the other stage's list.
+- **Edit class** — one list of tick-boxes for the subjects the class takes,
+  re-filtering when the report type changes.
+- **Edit student** — the same list, ticked to match their class, re-filtering
+  live when the class dropdown changes so a learner never sees the other
+  stage's list. Rows differing from the class default are flagged "changed".
+
+Both editors ask the same question, so both use `SubjectPicker`; only the
+starting state differs. The picker posts a hidden `subjectsPicked` marker so the
+server can tell "unticked everything" apart from "the picker never rendered" and
+leave the level above untouched in the second case.
 
 ## Testing
 

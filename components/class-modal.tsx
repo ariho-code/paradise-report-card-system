@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal } from "@/components/modal";
+import { SubjectPicker, classDefaults } from "@/components/subject-picker";
 import { btnPrimary, btnSecondary, fieldClass } from "@/components/ui";
-import type { SchoolClass, Stage } from "@/lib/types";
+import type { SchoolClass, Stage, Subject } from "@/lib/types";
 
 const LEVELS: Array<{ value: Stage; title: string; blurb: string }> = [
   {
@@ -20,12 +21,36 @@ const LEVELS: Array<{ value: Stage; title: string; blurb: string }> = [
 
 export function ClassModal({
   schoolClass,
+  subjects = [],
   onClose,
 }: {
   schoolClass?: SchoolClass | null;
+  subjects?: Subject[];
   onClose: () => void;
 }) {
   const [level, setLevel] = useState<Stage>(schoolClass?.level === "early_years" ? "early_years" : "standard");
+  const inStage = useMemo(() => subjects.filter((s) => s.stage === level), [subjects, level]);
+  const curriculum = useMemo(
+    () => new Set(inStage.filter((s) => s.compulsory).map((s) => s.id)),
+    [inStage],
+  );
+
+  // Switching level swaps the whole list, so the ticks are recomputed per level
+  // and edits to one level are not carried into the other.
+  const [takenByLevel, setTakenByLevel] = useState<Record<Stage, Set<string> | undefined>>({
+    standard: undefined,
+    early_years: undefined,
+  });
+  const taken = takenByLevel[level] ?? classDefaults(inStage, schoolClass);
+
+  function toggle(id: string, next: boolean) {
+    setTakenByLevel((current) => {
+      const base = new Set(current[level] ?? classDefaults(inStage, schoolClass));
+      if (next) base.add(id);
+      else base.delete(id);
+      return { ...current, [level]: base };
+    });
+  }
 
   return (
     <Modal kicker="Classes" title={schoolClass ? "Edit class" : "Add class"} onClose={onClose}>
@@ -74,6 +99,16 @@ export function ClassModal({
             })}
           </div>
         </fieldset>
+
+        <SubjectPicker
+          subjects={inStage}
+          taken={taken}
+          onToggle={toggle}
+          defaults={curriculum}
+          legend={level === "early_years" ? "Areas this class tracks" : "Subjects this class takes"}
+          hint="Set it once here and it applies to every learner in the class. Individual learners can still be changed on their own record."
+          emptyNote="No subjects for this type yet. Add them on the Subjects page."
+        />
 
         <p className="text-xs text-ink/55">
           Editing a class name also updates every student already in that class.

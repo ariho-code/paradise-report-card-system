@@ -44,6 +44,10 @@ export type SchoolClass = {
   name: string;
   sort_order: number;
   level: Stage;
+  /** Optional subjects this class adds on top of the compulsory ones. */
+  optional_subject_ids?: string[];
+  /** Compulsory subjects this class does not take. */
+  excluded_subject_ids?: string[];
 };
 
 export type Assessment = {

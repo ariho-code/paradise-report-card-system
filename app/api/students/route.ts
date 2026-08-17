@@ -28,21 +28,15 @@ export async function POST(request: NextRequest) {
   const grade = String(form.get("grade") || "").trim();
   const section = String(form.get("section") || "").trim();
   const adviser = String(form.get("adviser") || "").trim();
-  const optional = form.getAll("optional").map(String);
-  const excluded = form.getAll("excluded").map(String);
+  // Absent when the form never rendered the picker; null keeps the learner on
+  // their class default instead of clearing every subject.
+  const taken = form.has("subjectsPicked") ? form.getAll("taken").map(String) : null;
 
   if (!name || !grade) {
     return NextResponse.redirect(new URL("/students/new?error=1", origin), 303);
   }
 
-  const payload = {
-    name,
-    grade,
-    section,
-    adviser,
-    optional_subject_ids: optional,
-    excluded_subject_ids: excluded,
-  };
+  const payload = { name, grade, section, adviser, taken_subject_ids: taken };
   if (id) await updateStudent(id, payload);
   else await createStudent(payload);
 

@@ -4,25 +4,27 @@ import { useState } from "react";
 import { ClassModal } from "@/components/class-modal";
 import { ConfirmButton } from "@/components/confirm-button";
 import { btnPrimary, btnQuiet, btnSecondary, cardClass } from "@/components/ui";
-import type { SchoolClass } from "@/lib/types";
+import type { SchoolClass, Subject } from "@/lib/types";
 
-export function AddClassButton() {
+export function AddClassButton({ subjects = [] }: { subjects?: Subject[] }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className={btnPrimary}>
         Add class
       </button>
-      {open ? <ClassModal onClose={() => setOpen(false)} /> : null}
+      {open ? <ClassModal subjects={subjects} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
 
 export function ClassesBoard({
   classes,
+  subjects = [],
   error,
 }: {
   classes: SchoolClass[];
+  subjects?: Subject[];
   error?: string;
 }) {
   const [open, setOpen] = useState<null | "create" | SchoolClass>(null);
@@ -74,8 +76,10 @@ export function ClassesBoard({
           </ul>
         )}
       </div>
-      {open === "create" ? <ClassModal onClose={() => setOpen(null)} /> : null}
-      {open && open !== "create" ? <ClassModal schoolClass={open} onClose={() => setOpen(null)} /> : null}
+      {open === "create" ? <ClassModal subjects={subjects} onClose={() => setOpen(null)} /> : null}
+      {open && open !== "create" ? (
+        <ClassModal schoolClass={open} subjects={subjects} onClose={() => setOpen(null)} />
+      ) : null}
     </>
   );
 }

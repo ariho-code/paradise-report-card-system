@@ -30,7 +30,7 @@ export default async function StudentMarksPage({
 
   const period = readPeriod(query, { year: settings.current_year, term: settings.current_term });
   const stage = await stageForGrade(student.grade);
-  const subjects = await subjectsForStudent(student.id, stage);
+  const subjects = await subjectsForStudent(student.id);
   const assessment = await getAssessment(student.id, period.year, period.term);
   const earlyYears = stage === "early_years";
   const marks = assessment && !earlyYears ? await listMarks(assessment.id) : [];
