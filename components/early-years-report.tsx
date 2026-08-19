@@ -1,3 +1,4 @@
+import { FitToPage } from "@/components/fit-to-page";
 import {
   BRASS,
   DISPLAY,
@@ -11,6 +12,7 @@ import {
   ReportHeader,
   ReportMeta,
   SANS,
+  SignatureBand,
   panel,
   panelHeader,
 } from "@/components/report-chrome";
@@ -82,15 +84,14 @@ export function EarlyYearsReport({
   return (
     <article className="print-sheet">
       <img className="print-watermark" src="/logo.jpg" alt="" />
-      <div className="print-inner">
+      <FitToPage>
         <ReportHeader settings={settings} />
         <ReportBanner label="Early Years Progress Report" />
         <ReportMeta student={student} year={year} term={term} />
 
         <section
           style={{
-            flex: "1 1 auto",
-            minHeight: 0,
+            flex: "1 0 auto",
             display: "flex",
             border: `1px solid ${LINE}`,
             borderRadius: 8,
@@ -196,52 +197,25 @@ export function EarlyYearsReport({
           ))}
         </div>
 
-        <section style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 8 }}>
-          <div>
-            <div style={panel}>
-              <div style={panelHeader}>Teacher&apos;s remarks</div>
-              <p
-                style={{
-                  margin: "10px 0 0",
-                  fontFamily: DISPLAY,
-                  fontSize: 13,
-                  lineHeight: 1.4,
-                  color: INK,
-                  maxHeight: 72,
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 4,
-                  WebkitBoxOrient: "vertical",
-                }}
-              >
-                {teacherComment || "—"}
-              </p>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 14 }}>
-              <span
-                style={{
-                  fontFamily: SANS,
-                  fontSize: 8,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: MUTED,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Teacher&apos;s signature
-              </span>
-              <div style={{ flex: 1, height: 1, background: NAVY }} />
-            </div>
-          </div>
-          <div style={panel}>
-            <div style={panelHeader}>Term dates</div>
-            <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}>Opens · {settings.term_open || "—"}</p>
-            <p style={{ margin: "6px 0 0", fontSize: 13, fontFamily: SANS }}>Ends · {settings.term_end || "—"}</p>
-          </div>
+        <section style={panel}>
+          <div style={panelHeader}>Teacher&apos;s remarks</div>
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontFamily: DISPLAY,
+              fontSize: 12.5,
+              lineHeight: 1.4,
+              color: INK,
+            }}
+          >
+            {teacherComment || "—"}
+          </p>
         </section>
 
+        <SignatureBand adviser={student.adviser || ""} principal={settings.principal} />
+
         <ReportFooter settings={settings} />
-      </div>
+      </FitToPage>
     </article>
   );
 }
