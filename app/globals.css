@@ -78,15 +78,50 @@ a {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8mm 10mm 6mm;
+  padding: 11mm 13mm 10mm;
   box-sizing: border-box;
   min-height: 0;
+}
+
+/* The fixed window the report has to fit inside. */
+.print-fit {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * Laid out at full size in a box divided by --fit-scale, then scaled back down
+ * to exactly fill .print-fit. At a scale of 1 the two are identical, so a
+ * report that already fits is rendered with no transform of any consequence.
+ */
+.print-fit-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: calc(100% / var(--fit-scale, 1));
+  min-height: calc(100% / var(--fit-scale, 1));
+  transform: scale(var(--fit-scale, 1));
+  transform-origin: top left;
+}
+
+/*
+ * Sections must never be squeezed to fit. Without this the flex column shrinks
+ * each one below its content and every section quietly clips its own rows, so
+ * an overlong report loses subjects with nothing on the page to show for it.
+ */
+.print-fit-content > * {
+  flex-shrink: 0;
 }
 
 .print-grow {
   flex: 1 1 auto;
   min-height: 8px;
+}
+
+/* Clear space to sign in, held at its true size however much the sheet scales. */
+.sig-space {
+  height: calc(var(--sig-mm, 15mm) / var(--fit-scale, 1));
 }
 
 .modal-sheet {
@@ -148,10 +183,6 @@ a {
     page-break-inside: avoid;
     break-inside: avoid;
     background: #ffffff !important;
-  }
-
-  .print-inner {
-    padding: 12mm 14mm 11mm !important;
   }
 
   .print-watermark {

@@ -1,3 +1,4 @@
+import { FitToPage } from "@/components/fit-to-page";
 import {
   BRASS,
   DISPLAY,
@@ -12,6 +13,7 @@ import {
   ReportHeader,
   ReportMeta,
   SANS,
+  SignatureBand,
   panel,
   panelHeader,
 } from "@/components/report-chrome";
@@ -34,16 +36,17 @@ function GradeSeal({ grade }: { grade: string }) {
       className="grade-seal"
       style={{
         display: "inline-block",
-        minWidth: 26,
-        height: 22,
-        lineHeight: "20px",
-        padding: "0 6px",
+        minWidth: 22,
+        // Sized by padding, with no explicit height or line-height. The award
+        // chips on the Early Years sheet are built the same way, and it is the
+        // only form html2canvas centres the letter in for the PDF export.
+        padding: "1px 5px",
         borderRadius: 4,
         background: look.bg,
         color: look.color,
         border: `1.5px solid ${look.border}`,
         fontFamily: DISPLAY,
-        fontSize: 12,
+        fontSize: 10.5,
         fontWeight: 800,
         textAlign: "center",
         WebkitPrintColorAdjust: "exact",
@@ -52,6 +55,48 @@ function GradeSeal({ grade }: { grade: string }) {
     >
       {grade}
     </span>
+  );
+}
+
+/**
+ * The grading key is a legend, not a table. Reading it as one horizontal strip
+ * costs a couple of lines instead of the third of a page a stacked panel took,
+ * and matches the key word strip on the Early Years sheet.
+ */
+function GradingKeyStrip() {
+  return (
+    <section
+      style={{
+        display: "flex",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "4px 14px",
+        border: `1px solid ${LINE}`,
+        borderRadius: 8,
+        padding: "5px 10px",
+        background: "#ffffff",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: SANS,
+          fontSize: 8,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: MUTED,
+          fontWeight: 700,
+        }}
+      >
+        Grading key
+      </span>
+      {GRADE_SCALE.filter((row) => row.grade !== "U").map((row) => (
+        <span key={row.grade} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <GradeSeal grade={row.grade} />
+          <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>{row.range}</span>
+          <span style={{ fontFamily: SANS, fontSize: 10 }}>{row.meaning}</span>
+        </span>
+      ))}
+    </section>
   );
 }
 
@@ -80,7 +125,7 @@ export function ReportCard({
   return (
     <article className="print-sheet">
       <img className="print-watermark" src="/logo.jpg" alt="" />
-      <div className="print-inner">
+      <FitToPage>
         <ReportHeader settings={settings} />
         <ReportBanner label="Academic Progress Report" />
         <ReportMeta student={student} year={year} term={term} />
@@ -92,7 +137,7 @@ export function ReportCard({
                 <th style={{ textAlign: "left", padding: "4px 8px", fontWeight: 600 }}>Subject</th>
                 <th style={{ width: 55, padding: "4px 4px", fontWeight: 600 }}>Test</th>
                 <th style={{ width: 55, padding: "4px 4px", fontWeight: 600 }}>EOT</th>
-                <th style={{ width: 60, padding: "4px 4px", fontWeight: 600 }}>Grade</th>
+                <th style={{ width: 56, padding: "4px 4px", fontWeight: 600 }}>Grade</th>
                 <th style={{ textAlign: "left", padding: "4px 8px", fontWeight: 600 }}>Remark</th>
               </tr>
             </thead>
@@ -106,15 +151,15 @@ export function ReportCard({
               ) : (
                 graded.map((row, i) => (
                   <tr key={row.subject_id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
-                    <td style={{ padding: "3px 8px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
+                    <td style={{ padding: "2px 8px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
                       {row.subject_name}
                     </td>
                     <td style={cellMono}>{row.missed ? "—" : row.test ?? "—"}</td>
                     <td style={cellMono}>{row.missed ? "—" : row.eot ?? "—"}</td>
-                    <td style={{ ...cellMono, paddingTop: 5, paddingBottom: 5 }}>
+                    <td style={{ ...cellMono, paddingTop: 3, paddingBottom: 3 }}>
                       <GradeSeal grade={row.grade} />
                     </td>
-                    <td style={{ padding: "3px 8px", borderTop: `1px solid ${LINE}`, color: MUTED, fontStyle: "italic" }}>
+                    <td style={{ padding: "2px 8px", borderTop: `1px solid ${LINE}`, color: MUTED, fontStyle: "italic" }}>
                       {row.missed ? "Absent / not assessed" : row.comment || remarkFromGrade(row.grade)}
                     </td>
                   </tr>
@@ -140,7 +185,7 @@ export function ReportCard({
 
         <div className="print-grow" />
 
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8, alignItems: "start" }}>
           <div style={panel}>
             <div style={panelHeader}>Character</div>
             {characters.map((row) => (
@@ -151,37 +196,14 @@ export function ReportCard({
             ))}
           </div>
           <div style={panel}>
-            <div style={panelHeader}>Grading key</div>
-            {GRADE_SCALE.filter((row) => row.grade !== "U").map((row) => (
-              <div key={row.grade} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                <GradeSeal grade={row.grade} />
-                <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED, width: 86 }}>{row.range}</span>
-                <span style={{ fontSize: 12 }}>{row.meaning}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8 }}>
-          <div style={panel}>
-            <div style={panelHeader}>Term dates</div>
-            <p style={{ margin: "10px 0 0", fontSize: 13, fontFamily: SANS }}>Opens · {settings.term_open || "—"}</p>
-            <p style={{ margin: "6px 0 0", fontSize: 13, fontFamily: SANS }}>Ends · {settings.term_end || "—"}</p>
-          </div>
-          <div style={panel}>
             <div style={panelHeader}>Teacher&apos;s comment</div>
             <p
               style={{
-                margin: "10px 0 0",
+                margin: "8px 0 0",
                 fontFamily: DISPLAY,
-                fontSize: 13,
+                fontSize: 12.5,
                 lineHeight: 1.4,
                 color: INK,
-                maxHeight: 80,
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
               }}
             >
               {teacherComment || "—"}
@@ -189,14 +211,18 @@ export function ReportCard({
           </div>
         </section>
 
+        <GradingKeyStrip />
+
+        <SignatureBand adviser={student.adviser || ""} principal={settings.principal} />
+
         <ReportFooter settings={settings} />
-      </div>
+      </FitToPage>
     </article>
   );
 }
 
 const cellMono: React.CSSProperties = {
-  padding: "3px 5px",
+  padding: "2px 5px",
   borderTop: `1px solid ${LINE}`,
   textAlign: "center",
   fontFamily: MONO,
