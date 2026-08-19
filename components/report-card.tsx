@@ -37,12 +37,13 @@ function GradeSeal({ grade }: { grade: string }) {
       style={{
         display: "inline-block",
         minWidth: 22,
-        // Kept to padding, no explicit height or line-height, and an integer
-        // font size. html2canvas drops the letter onto the bottom edge of the
-        // box given either an explicit line-height or a fractional size, which
-        // pushed the grade half out of its seal in the downloaded PDF. The
-        // award chips on the Early Years sheet are built the same way.
-        padding: "2px 5px",
+        // line-height must equal the font size. The sheet inherits a 1.5
+        // line-height, and html2canvas puts the whole of that leading above
+        // the glyph instead of splitting it, dropping the letter half out of
+        // its seal in the downloaded PDF. With no leading there is nothing for
+        // it to misplace, and the padding alone centres the grade.
+        lineHeight: 1,
+        padding: "4px 5px",
         borderRadius: 4,
         background: look.bg,
         color: look.color,
