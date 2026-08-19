@@ -91,7 +91,7 @@ export function EarlyYearsReport({
 
         <section
           style={{
-            flex: "1 0 auto",
+            flex: "0 0 auto",
             display: "flex",
             border: `1px solid ${LINE}`,
             borderRadius: 8,

@@ -98,6 +98,12 @@ a {
 .print-fit-content {
   display: flex;
   flex-direction: column;
+  /*
+   * Whatever room the report does not use is shared out between every block
+   * rather than pooled into one gap, so a light report reads as evenly spaced
+   * and a full one closes up to the 6px minimum on its own.
+   */
+  justify-content: space-between;
   gap: 6px;
   width: calc(100% / var(--fit-scale, 1));
   min-height: calc(100% / var(--fit-scale, 1));
@@ -112,11 +118,6 @@ a {
  */
 .print-fit-content > * {
   flex-shrink: 0;
-}
-
-.print-grow {
-  flex: 1 1 auto;
-  min-height: 8px;
 }
 
 /* Clear space to sign in, held at its true size however much the sheet scales. */

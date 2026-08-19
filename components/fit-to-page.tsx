@@ -15,7 +15,7 @@ import { useEffect, useRef } from "react";
  * shrinking: the signature spaces divide by it to keep their real-world size.
  */
 
-const MIN_SCALE = 0.66;
+const MIN_SCALE = 0.56;
 const STEPS = 8;
 const TOLERANCE = 0.5;
 

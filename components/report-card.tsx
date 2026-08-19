@@ -37,16 +37,18 @@ function GradeSeal({ grade }: { grade: string }) {
       style={{
         display: "inline-block",
         minWidth: 22,
-        // Sized by padding, with no explicit height or line-height. The award
-        // chips on the Early Years sheet are built the same way, and it is the
-        // only form html2canvas centres the letter in for the PDF export.
-        padding: "1px 5px",
+        // Kept to padding, no explicit height or line-height, and an integer
+        // font size. html2canvas drops the letter onto the bottom edge of the
+        // box given either an explicit line-height or a fractional size, which
+        // pushed the grade half out of its seal in the downloaded PDF. The
+        // award chips on the Early Years sheet are built the same way.
+        padding: "2px 5px",
         borderRadius: 4,
         background: look.bg,
         color: look.color,
         border: `1.5px solid ${look.border}`,
         fontFamily: DISPLAY,
-        fontSize: 10.5,
+        fontSize: 11,
         fontWeight: 800,
         textAlign: "center",
         WebkitPrintColorAdjust: "exact",
@@ -59,43 +61,35 @@ function GradeSeal({ grade }: { grade: string }) {
 }
 
 /**
- * The grading key is a legend, not a table. Reading it as one horizontal strip
- * costs a couple of lines instead of the third of a page a stacked panel took,
- * and matches the key word strip on the Early Years sheet.
+ * The grading key is a legend, not a table. One titled panel with the six bands
+ * on an even grid reads at a glance and costs a fraction of the third of a page
+ * the old stacked panel took. Equal columns keep the seals on a common baseline
+ * however wide the sheet is scaled.
  */
-function GradingKeyStrip() {
+function GradingKeyPanel() {
+  const bands = GRADE_SCALE.filter((row) => row.grade !== "U");
   return (
-    <section
-      style={{
-        display: "flex",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: "4px 14px",
-        border: `1px solid ${LINE}`,
-        borderRadius: 8,
-        padding: "5px 10px",
-        background: "#ffffff",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: SANS,
-          fontSize: 8,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: MUTED,
-          fontWeight: 700,
-        }}
-      >
-        Grading key
-      </span>
-      {GRADE_SCALE.filter((row) => row.grade !== "U").map((row) => (
-        <span key={row.grade} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <GradeSeal grade={row.grade} />
-          <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>{row.range}</span>
-          <span style={{ fontFamily: SANS, fontSize: 10 }}>{row.meaning}</span>
-        </span>
-      ))}
+    <section style={panel}>
+      <div style={panelHeader}>Grading key</div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${bands.length}, 1fr)`, gap: 6 }}>
+        {bands.map((row, i) => (
+          <div
+            key={row.grade}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              textAlign: "center",
+              borderLeft: i === 0 ? "none" : `1px solid ${LINE}`,
+            }}
+          >
+            <GradeSeal grade={row.grade} />
+            <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, whiteSpace: "nowrap" }}>{row.range}</span>
+            <span style={{ fontFamily: SANS, fontSize: 9.5, color: INK }}>{row.meaning}</span>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
@@ -183,9 +177,7 @@ export function ReportCard({
           </section>
         ) : null}
 
-        <div className="print-grow" />
-
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8, alignItems: "start" }}>
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8 }}>
           <div style={panel}>
             <div style={panelHeader}>Character</div>
             {characters.map((row) => (
@@ -211,7 +203,7 @@ export function ReportCard({
           </div>
         </section>
 
-        <GradingKeyStrip />
+        <GradingKeyPanel />
 
         <SignatureBand adviser={student.adviser || ""} principal={settings.principal} />
 
