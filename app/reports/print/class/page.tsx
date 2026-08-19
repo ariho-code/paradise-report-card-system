@@ -77,7 +77,7 @@ export default async function ClassPrintPage({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <PrintButton label={`Print ${students.length}`} />
           <PdfDownloadButton
-            label={`Download ${students.length} PDFs`}
+            label={`Save ${students.length} as PDF`}
             filename={`${fileLabel}-${period.term}-${period.year}.pdf`}
           />
         </div>

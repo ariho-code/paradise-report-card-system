@@ -37,11 +37,10 @@ function GradeSeal({ grade }: { grade: string }) {
       style={{
         display: "inline-block",
         minWidth: 22,
-        // line-height must equal the font size. The sheet inherits a 1.5
-        // line-height, and html2canvas puts the whole of that leading above
-        // the glyph instead of splitting it, dropping the letter half out of
-        // its seal in the downloaded PDF. With no leading there is nothing for
-        // it to misplace, and the padding alone centres the grade.
+        // A badge sizes itself: with no leading of its own the padding alone
+        // decides how much room sits around the letter, so the seal keeps its
+        // shape wherever it is used and does not inherit the sheet's 1.5 line
+        // height and grow a lopsided gap above the grade.
         lineHeight: 1,
         padding: "4px 5px",
         borderRadius: 4,
