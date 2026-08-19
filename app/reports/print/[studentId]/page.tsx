@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EarlyYearsReport } from "@/components/early-years-report";
+import { FitReports } from "@/components/fit-reports";
 import { PdfDownloadButton } from "@/components/pdf-download";
 import { PrintButton } from "@/components/print-button";
 import { ReportCard } from "@/components/report-card";
@@ -76,6 +77,7 @@ export default async function PrintReportPage({
           teacherComment={assessment?.teacher_comment || ""}
         />
       )}
+      <FitReports />
     </main>
   );
 }
