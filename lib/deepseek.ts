@@ -125,7 +125,7 @@ export async function generateComments(input: {
   const subjectList = input.marks.map((row) => row.subject).join(", ");
 
   const prompt = `You write report-card comments for Paradise Christian School, motto "Be The Light".
-Voice: warm, Christian, specific, honest, and encouraging. Short phrases for character. One paragraph for the class teacher comment. No averages. Do not invent extra subjects.
+Voice: warm, Christian, specific, honest, and encouraging. Write about this learner, in sentences a parent can act on. No averages. Do not invent extra subjects.
 
 Learner: ${input.studentName}
 Class: ${input.studentClass}
@@ -153,10 +153,10 @@ Return JSON only:
   "markComments": {}
 }
 
-Each character remark is a short teacher-written phrase (3–8 words), not a locked slogan.
-The teacherComment must be brief - exactly 2-3 sentences maximum, under 150 characters total. Keep it concise and impactful.
-For markComments, provide a brief 2-4 word comment for each subject based on the grade. Keys should be exact subject names from the marks list.
-Also add one entry to markComments for each skill listed above, keyed by its exact name. A skill has no grade, so write 6-12 words on what the learner does in it — never mention marks, grades or scores for a skill.`;
+Each character remark is one or two full sentences (12–30 words) about what the learner actually does, not a locked slogan.
+The teacherComment is the paragraph parents read first: 2-4 sentences, 250-400 characters, naming a strength, an area to grow and a next step.
+markComments are the elaborate subject comments. They print on their own page, so each one is 1-3 sentences (20-45 words) about what the learner understands in that subject, what they can now do, and what to work on next. Never restate the grade or the mark — the report prints a band remark of its own beside the score — and never write a bare label like "Good work". Keys should be exact subject names from the marks list.
+Also add one entry to markComments for each skill listed above, keyed by its exact name. A skill has no grade, so write 20-40 words on what the learner does in it — never mention marks, grades or scores for a skill.`;
 
   const parsed = (await askDeepSeek(prompt)) as {
     characters?: Record<string, string>;

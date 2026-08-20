@@ -5,6 +5,7 @@ import { FitReports } from "@/components/fit-reports";
 import { PdfDownloadButton } from "@/components/pdf-download";
 import { PrintButton } from "@/components/print-button";
 import { ReportCard } from "@/components/report-card";
+import { ReportCommentary, hasCommentary } from "@/components/report-commentary";
 import {
   getAssessment,
   getSettings,
@@ -38,6 +39,7 @@ export default async function PrintReportPage({
   const characters = assessment && !earlyYears ? await listCharacterMarks(assessment.id) : [];
   const areas = earlyYears ? await subjectsForStudent(student.id) : [];
   const progress = assessment && earlyYears ? await listAreaProgress(assessment.id) : [];
+  const commentary = !earlyYears && hasCommentary(marks, characters, assessment?.teacher_comment || "");
   const q = periodQuery(period.year, period.term);
 
   return (
@@ -67,15 +69,27 @@ export default async function PrintReportPage({
           teacherComment={assessment?.teacher_comment || ""}
         />
       ) : (
-        <ReportCard
-          student={student}
-          settings={settings}
-          year={period.year}
-          term={period.term}
-          marks={marks}
-          characters={characters}
-          teacherComment={assessment?.teacher_comment || ""}
-        />
+        <>
+          <ReportCard
+            student={student}
+            settings={settings}
+            year={period.year}
+            term={period.term}
+            marks={marks}
+            hasCommentary={commentary}
+          />
+          {commentary ? (
+            <ReportCommentary
+              student={student}
+              settings={settings}
+              year={period.year}
+              term={period.term}
+              marks={marks}
+              characters={characters}
+              teacherComment={assessment?.teacher_comment || ""}
+            />
+          ) : null}
+        </>
       )}
       <FitReports />
     </main>

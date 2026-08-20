@@ -194,3 +194,93 @@ a {
     page-break-after: auto;
   }
 }
+
+/*
+ * A sheet that grows instead of clipping.
+ *
+ * The summary sheet above is exactly one page and scales its contents to fit,
+ * which is right for a fixed table of marks. Commentary is not fixed: a class
+ * teacher who writes fully about eleven subjects needs more room than one who
+ * writes about three, and squeezing that into a page is exactly what made the
+ * printed reports unreadable. So this sheet keeps a full page as its minimum
+ * and runs onto another page when the writing needs it.
+ */
+.print-flow-sheet {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  max-width: 100%;
+  margin: 0 auto;
+  /* Matches the @page margins below, so the preview measures like the print. */
+  padding: 12mm 13mm 11mm;
+  background: #ffffff;
+  color: #1a1f2b;
+  border: 1px solid #16325c;
+  box-shadow: 0 18px 50px rgba(22, 50, 92, 0.12);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/*
+ * Pushes the footer to the foot of a lightly filled sheet, and asks not to be
+ * broken away from the writing above it — a page carrying nothing but a footer
+ * rule is the one page break that reads as a fault rather than as length.
+ */
+.print-flow-tail {
+  margin-top: auto;
+  padding-top: 4px;
+  break-before: avoid;
+  page-break-before: avoid;
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* A comment must not be torn in half across a page boundary. */
+.print-block {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  /*
+   * The summary sheet is its own page, bled to the edges, and paints its own
+   * margins as padding. The commentary sheet flows, so its margins have to
+   * come from the page box instead — padding is laid down once and would leave
+   * a continuation page starting hard against the paper's edge. A named page
+   * gives it real margins on every page it runs onto, and switching page name
+   * also forces the break onto a fresh sheet.
+   */
+  @page commentary {
+    size: A4 portrait;
+    margin: 12mm 13mm 11mm;
+  }
+
+  .print-flow-sheet {
+    page: commentary;
+    width: auto !important;
+    max-width: none !important;
+    /*
+     * The page box less its margins, a shade under so rounding cannot tip an
+     * exactly-full sheet onto a blank second page. Without a height to fill,
+     * the flex column collapses onto its content and the footer's auto margin
+     * has no room to push into, stranding the rule halfway up the paper.
+     */
+    min-height: 273mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    page-break-after: always;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .print-flow-sheet:last-of-type {
+    page-break-after: auto;
+  }
+}
