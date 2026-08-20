@@ -1,8 +1,7 @@
 import { FitToPage } from "@/components/fit-to-page";
 import {
   BRASS,
-  DISPLAY,
-  GREEN,
+  GradeSeal,
   INK,
   LINE,
   MONO,
@@ -14,50 +13,37 @@ import {
   ReportMeta,
   SANS,
   SignatureBand,
+  TYPE,
+  gradeInk,
   panel,
   panelHeader,
 } from "@/components/report-chrome";
 import { GRADE_SCALE } from "@/lib/types";
-import type { CharacterMark, Mark, Settings, Student } from "@/lib/types";
+import type { Mark, Settings, Student } from "@/lib/types";
 
-function GradeSeal({ grade }: { grade: string }) {
-  const tone: Record<string, { bg: string; color: string; border: string }> = {
-    A: { bg: GREEN, color: "#ffffff", border: GREEN },
-    B: { bg: NAVY, color: "#ffffff", border: NAVY },
-    C: { bg: BRASS, color: "#ffffff", border: BRASS },
-    D: { bg: "#fff4d6", color: "#7a5c00", border: BRASS },
-    E: { bg: "#fdecec", color: "#8c2f2f", border: "#8c2f2f" },
-    F: { bg: "#8c2f2f", color: "#ffffff", border: "#8c2f2f" },
-    U: { bg: "#f1f5f9", color: MUTED, border: LINE },
-  };
-  const look = tone[grade] || tone.U;
-  return (
-    <span
-      className="grade-seal"
-      style={{
-        display: "inline-block",
-        minWidth: 22,
-        // A badge sizes itself: with no leading of its own the padding alone
-        // decides how much room sits around the letter, so the seal keeps its
-        // shape wherever it is used and does not inherit the sheet's 1.5 line
-        // height and grow a lopsided gap above the grade.
-        lineHeight: 1,
-        padding: "4px 5px",
-        borderRadius: 4,
-        background: look.bg,
-        color: look.color,
-        border: `1.5px solid ${look.border}`,
-        fontFamily: DISPLAY,
-        fontSize: 11,
-        fontWeight: 800,
-        textAlign: "center",
-        WebkitPrintColorAdjust: "exact",
-        printColorAdjust: "exact",
-      }}
-    >
-      {grade}
-    </span>
-  );
+/**
+ * Page one: what the learner scored, and nothing that has to be read closely.
+ *
+ * The remark column carries the band word for the grade and only ever that.
+ * Elaborate subject comments used to sit in this column, which forced the
+ * whole sheet down to a size the school's printer could not resolve; they now
+ * have a page of their own where they can be set at a readable size. See
+ * <ReportCommentary />.
+ */
+
+/** The generic remarks the school asked for: one short phrase per band. */
+const BAND_REMARK: Record<string, string> = {
+  A: "Excellent",
+  B: "Good work",
+  C: "Fair effort",
+  D: "Work harder",
+  E: "Work much harder",
+  F: "Needs close support",
+  U: "Not assessed",
+};
+
+export function bandRemark(grade: string) {
+  return BAND_REMARK[grade] || BAND_REMARK.U;
 }
 
 /**
@@ -79,14 +65,14 @@ function GradingKeyPanel() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 2,
+              gap: 3,
               textAlign: "center",
               borderLeft: i === 0 ? "none" : `1px solid ${LINE}`,
             }}
           >
             <GradeSeal grade={row.grade} />
-            <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, whiteSpace: "nowrap" }}>{row.range}</span>
-            <span style={{ fontFamily: SANS, fontSize: 9.5, color: INK }}>{row.meaning}</span>
+            <span style={{ fontFamily: MONO, fontSize: TYPE.fine, color: MUTED, whiteSpace: "nowrap" }}>{row.range}</span>
+            <span style={{ fontFamily: SANS, fontSize: TYPE.fine, color: INK }}>{row.meaning}</span>
           </div>
         ))}
       </div>
@@ -100,19 +86,18 @@ export function ReportCard({
   year,
   term,
   marks,
-  characters,
-  teacherComment,
+  hasCommentary,
 }: {
   student: Student;
   settings: Settings;
   year: string;
   term: string;
   marks: Mark[];
-  characters: CharacterMark[];
-  teacherComment: string;
+  /** Whether a commentary sheet follows, so the footer can say so. */
+  hasCommentary?: boolean;
 }) {
-  // Skills carry a written comment instead of marks, so they print in their
-  // own block rather than as a row of dashes in the marks table.
+  // Skills carry a written comment instead of marks, so they are named here
+  // and written about overleaf rather than printed as a row of dashes.
   const graded = marks.filter((row) => row.graded !== false);
   const skills = marks.filter((row) => row.graded === false);
 
@@ -125,14 +110,22 @@ export function ReportCard({
         <ReportMeta student={student} year={year} term={term} />
 
         <section style={{ border: `1px solid ${LINE}`, borderRadius: 8, overflow: "hidden", background: "#ffffff" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10.5, fontFamily: SANS }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              tableLayout: "fixed",
+              fontSize: TYPE.table,
+              fontFamily: SANS,
+            }}
+          >
             <thead>
               <tr style={{ background: NAVY, color: "#ffffff" }}>
-                <th style={{ textAlign: "left", padding: "4px 8px", fontWeight: 600 }}>Subject</th>
-                <th style={{ width: 55, padding: "4px 4px", fontWeight: 600 }}>Test</th>
-                <th style={{ width: 55, padding: "4px 4px", fontWeight: 600 }}>EOT</th>
-                <th style={{ width: 56, padding: "4px 4px", fontWeight: 600 }}>Grade</th>
-                <th style={{ textAlign: "left", padding: "4px 8px", fontWeight: 600 }}>Remark</th>
+                <th style={{ ...head, textAlign: "left" }}>Subject</th>
+                <th style={{ ...head, width: "12%" }}>Test</th>
+                <th style={{ ...head, width: "12%" }}>EOT</th>
+                <th style={{ ...head, width: "12%" }}>Grade</th>
+                <th style={{ ...head, width: "27%", textAlign: "left" }}>Remark</th>
               </tr>
             </thead>
             <tbody>
@@ -145,16 +138,21 @@ export function ReportCard({
               ) : (
                 graded.map((row, i) => (
                   <tr key={row.subject_id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
-                    <td style={{ padding: "2px 8px", borderTop: `1px solid ${LINE}`, fontWeight: 600, color: NAVY }}>
-                      {row.subject_name}
-                    </td>
+                    <td style={{ ...cell, fontWeight: 600, color: NAVY }}>{row.subject_name}</td>
                     <td style={cellMono}>{row.missed ? "—" : row.test ?? "—"}</td>
                     <td style={cellMono}>{row.missed ? "—" : row.eot ?? "—"}</td>
-                    <td style={{ ...cellMono, paddingTop: 3, paddingBottom: 3 }}>
+                    <td style={{ ...cell, textAlign: "center" }}>
                       <GradeSeal grade={row.grade} />
                     </td>
-                    <td style={{ padding: "2px 8px", borderTop: `1px solid ${LINE}`, color: MUTED, fontStyle: "italic" }}>
-                      {row.missed ? "Absent / not assessed" : row.comment || remarkFromGrade(row.grade)}
+                    <td
+                      style={{
+                        ...cell,
+                        fontSize: TYPE.remark,
+                        fontWeight: 600,
+                        color: row.missed ? MUTED : gradeInk(row.grade),
+                      }}
+                    >
+                      {row.missed ? "Absent" : bandRemark(row.grade)}
                     </td>
                   </tr>
                 ))
@@ -164,81 +162,80 @@ export function ReportCard({
         </section>
 
         {skills.length > 0 ? (
-          <section style={panel}>
-            <div style={panelHeader}>Skills</div>
-            {skills.map((row) => (
-              <div key={row.subject_id} style={rowLine}>
-                <strong style={{ color: NAVY, whiteSpace: "nowrap" }}>{row.subject_name}</strong>
-                <span style={{ fontStyle: "italic", color: MUTED, textAlign: "right" }}>
-                  {row.comment || "—"}
-                </span>
-              </div>
-            ))}
-          </section>
-        ) : null}
-
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 8 }}>
-          <div style={panel}>
-            <div style={panelHeader}>Character</div>
-            {characters.map((row) => (
-              <div key={row.trait} style={rowLine}>
-                <strong style={{ color: NAVY }}>{row.trait}</strong>
-                <span style={{ fontStyle: "italic", color: MUTED, textAlign: "right" }}>{row.remark || "—"}</span>
-              </div>
-            ))}
-          </div>
-          <div style={panel}>
-            <div style={panelHeader}>Teacher&apos;s comment</div>
-            <p
+          <section
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 8,
+              border: `1px solid ${LINE}`,
+              borderRadius: 8,
+              padding: "6px 10px",
+              background: "#ffffff",
+            }}
+          >
+            <span
               style={{
-                margin: "8px 0 0",
-                fontFamily: DISPLAY,
-                fontSize: 12.5,
-                lineHeight: 1.4,
-                color: INK,
+                fontFamily: SANS,
+                fontSize: TYPE.label,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: MUTED,
+                fontWeight: 700,
               }}
             >
-              {teacherComment || "—"}
-            </p>
-          </div>
-        </section>
+              Also taking
+            </span>
+            {skills.map((row) => (
+              <span
+                key={row.subject_id}
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  border: `1px solid ${LINE}`,
+                  background: "#f7f9fc",
+                  fontFamily: SANS,
+                  fontSize: TYPE.remark,
+                  fontWeight: 600,
+                  color: NAVY,
+                }}
+              >
+                {row.subject_name}
+              </span>
+            ))}
+            <span style={{ marginLeft: "auto", fontFamily: SANS, fontSize: TYPE.fine, color: BRASS }}>
+              Assessed by comment overleaf
+            </span>
+          </section>
+        ) : null}
 
         <GradingKeyPanel />
 
         <SignatureBand adviser={student.adviser || ""} principal={settings.principal} />
 
-        <ReportFooter settings={settings} />
+        <ReportFooter settings={settings} note={hasCommentary ? "Teachers’ comments overleaf" : undefined} />
       </FitToPage>
     </article>
   );
 }
 
-const cellMono: React.CSSProperties = {
-  padding: "2px 5px",
+const head: React.CSSProperties = {
+  padding: "6px 8px",
+  fontWeight: 600,
+  fontSize: TYPE.remark,
+  letterSpacing: "0.04em",
+};
+
+const cell: React.CSSProperties = {
+  padding: "5px 8px",
   borderTop: `1px solid ${LINE}`,
+  verticalAlign: "middle",
+};
+
+const cellMono: React.CSSProperties = {
+  ...cell,
   textAlign: "center",
   fontFamily: MONO,
-  fontSize: 10,
+  fontSize: TYPE.remark,
+  color: INK,
 };
-
-const rowLine: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  padding: "2px 0",
-  borderBottom: `1px solid ${LINE}`,
-  fontSize: 10,
-};
-
-function remarkFromGrade(grade: string) {
-  const map: Record<string, string> = {
-    A: "Excellent work",
-    B: "Good progress",
-    C: "Keep it up",
-    D: "Needs more effort",
-    E: "More effort needed",
-    F: "Needs significant improvement",
-    U: "Not assessed",
-  };
-  return map[grade] || "";
-}

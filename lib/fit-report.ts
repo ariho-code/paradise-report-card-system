@@ -12,7 +12,13 @@
  * cropped. Parsing the page is enough to fit it.
  */
 export function fitReportSheets() {
-  var MIN_SCALE = 0.56;
+  // A legibility floor, not a fitting floor. The summary sheet is set at 13px
+  // so that it prints at 9.75pt, and 0.85 of that is 8.3pt — about as small as
+  // a mark on a page can get and still be read across a desk. The old floor of
+  // 0.56 took the sheet down to 4.4pt, which is what the school printed and
+  // could not read. Anything that will not fit by 0.85 belongs on a second
+  // sheet rather than shrunk, which is what the commentary page is for.
+  var MIN_SCALE = 0.85;
   var STEPS = 8;
   // A margin, not a slack allowance: sub-pixel layout rounding means a scale
   // accepted at exactly the frame height can still paint a fraction over it.

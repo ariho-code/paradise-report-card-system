@@ -155,6 +155,11 @@ export function MarksForm({
             <p className="text-sm text-ink/60">
               {studentClass} · {term} · {year}. Change any letter grade before saving.
             </p>
+            <p className="mt-1 max-w-xl text-sm text-ink/60">
+              Page 1 of the report prints the marks with a short band remark of its own — Excellent,
+              Good work, Work harder. Anything written in the comment column prints on page 2, where
+              there is room to be elaborate.
+            </p>
           </div>
         </div>
 
@@ -167,7 +172,7 @@ export function MarksForm({
                 <th className="w-24 px-2 py-2 font-medium">EOT</th>
                 <th className="w-24 px-2 py-2 font-medium">Grade</th>
                 <th className="w-24 px-2 py-2 font-medium">Missed</th>
-                <th className="px-3 py-2 font-medium">Remark</th>
+                <th className="px-3 py-2 font-medium">Subject comment · page 2</th>
               </tr>
             </thead>
             <tbody>
@@ -241,12 +246,13 @@ export function MarksForm({
                     </label>
                   </td>
                   <td className="px-3 py-2">
-                    <input
+                    <textarea
                       name={`comment_${row.subjectId}`}
+                      rows={2}
                       value={row.comment}
                       onChange={(e) => patch(index, { comment: e.target.value })}
-                      placeholder="Optional"
-                      className="w-full border border-rule bg-parchment px-2 py-1"
+                      placeholder="How well does the learner understand this subject?"
+                      className="w-full resize-y border border-rule bg-parchment px-2 py-1 leading-snug"
                     />
                   </td>
                 </tr>
@@ -264,7 +270,7 @@ export function MarksForm({
               Comment only, no marks
             </h3>
             <p className="text-sm text-ink/60">
-              These print in their own block on the report. Leave one blank to keep it off the sheet.
+              These print with the subject comments on page 2. Leave one blank to keep it off the sheet.
             </p>
           </div>
           <ul className="divide-y divide-rule">

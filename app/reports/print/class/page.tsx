@@ -4,6 +4,7 @@ import { FitReports } from "@/components/fit-reports";
 import { PdfDownloadButton } from "@/components/pdf-download";
 import { PrintButton } from "@/components/print-button";
 import { ReportCard } from "@/components/report-card";
+import { ReportCommentary, hasCommentary } from "@/components/report-commentary";
 import {
   getAssessment,
   getSettings,
@@ -52,6 +53,8 @@ export default async function ClassPrintPage({
     }
     const marks = assessment ? await listMarks(assessment.id) : [];
     const characters = assessment ? await listCharacterMarks(assessment.id) : [];
+    const teacherComment = assessment?.teacher_comment || "";
+    const commentary = hasCommentary(marks, characters, teacherComment);
     cards.push(
       <ReportCard
         key={student.id}
@@ -60,10 +63,23 @@ export default async function ClassPrintPage({
         year={period.year}
         term={period.term}
         marks={marks}
-        characters={characters}
-        teacherComment={assessment?.teacher_comment || ""}
+        hasCommentary={commentary}
       />,
     );
+    if (commentary) {
+      cards.push(
+        <ReportCommentary
+          key={`${student.id}-comments`}
+          student={student}
+          settings={settings}
+          year={period.year}
+          term={period.term}
+          marks={marks}
+          characters={characters}
+          teacherComment={teacherComment}
+        />,
+      );
+    }
   }
 
   const fileLabel = (className || "all-classes").replace(/\s+/g, "-");

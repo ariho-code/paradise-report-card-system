@@ -1,4 +1,3 @@
-import { FitToPage } from "@/components/fit-to-page";
 import {
   BRASS,
   DISPLAY,
@@ -13,12 +12,21 @@ import {
   ReportMeta,
   SANS,
   SignatureBand,
+  TYPE,
   panel,
   panelHeader,
 } from "@/components/report-chrome";
 import { AWARD_LEVELS } from "@/lib/types";
 import type { AreaProgress, Settings, Student, Subject } from "@/lib/types";
 
+/**
+ * The Early Years report is narrative all the way down: the seven areas are
+ * described rather than marked, so there is no table of figures to hold to a
+ * page. It therefore flows like the senior commentary sheet — a full page at
+ * minimum, running onto a second when a teacher has written at length —
+ * instead of being scaled down to fit. Scaling is what made it print at around
+ * 8pt; the writing is the whole document and has to be readable.
+ */
 function AwardChip({ award }: { award: string }) {
   const tone: Record<string, { bg: string; color: string; border: string }> = {
     Impressive: { bg: GREEN, color: "#ffffff", border: GREEN },
@@ -27,20 +35,20 @@ function AwardChip({ award }: { award: string }) {
   };
   const look = tone[award];
   if (!look) {
-    return <span style={{ color: MUTED, fontSize: 11 }}>—</span>;
+    return <span style={{ color: MUTED, fontSize: TYPE.remark }}>—</span>;
   }
   return (
     <span
       className="grade-seal"
       style={{
         display: "inline-block",
-        padding: "2px 9px",
+        padding: "3px 9px",
         borderRadius: 4,
         background: look.bg,
         color: look.color,
         border: `1.5px solid ${look.border}`,
         fontFamily: SANS,
-        fontSize: 9.5,
+        fontSize: TYPE.fine,
         fontWeight: 700,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
@@ -82,129 +90,115 @@ export function EarlyYearsReport({
   }));
 
   return (
-    <article className="print-sheet">
-      <img className="print-watermark" src="/logo.jpg" alt="" />
-      <FitToPage>
-        <ReportHeader settings={settings} />
-        <ReportBanner label="Early Years Progress Report" />
-        <ReportMeta student={student} year={year} term={term} />
+    <article className="print-flow-sheet">
+      <ReportHeader settings={settings} />
+      <ReportBanner label="Early Years Progress Report" />
+      <ReportMeta student={student} year={year} term={term} />
 
-        <section
+      <section
+        style={{
+          border: `1px solid ${LINE}`,
+          borderRadius: 8,
+          overflow: "hidden",
+          background: "#ffffff",
+        }}
+      >
+        <table
           style={{
-            flex: "0 0 auto",
-            display: "flex",
-            border: `1px solid ${LINE}`,
-            borderRadius: 8,
-            overflow: "hidden",
-            background: "#ffffff",
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: TYPE.narrative,
+            fontFamily: SANS,
+            tableLayout: "fixed",
           }}
         >
-          <table
-            style={{
-              width: "100%",
-              height: "100%",
-              borderCollapse: "collapse",
-              fontSize: 11,
-              fontFamily: SANS,
-              tableLayout: "fixed",
-            }}
-          >
-            <thead>
-              <tr style={{ background: NAVY, color: "#ffffff" }}>
-                <th style={{ width: "30%", textAlign: "left", padding: "5px 8px", fontWeight: 600 }}>Area tracked</th>
-                <th style={{ textAlign: "left", padding: "5px 8px", fontWeight: 600 }}>Progress</th>
-                <th style={{ width: "17%", padding: "5px 8px", fontWeight: 600 }}>Award</th>
+          <thead>
+            <tr style={{ background: NAVY, color: "#ffffff" }}>
+              <th style={{ ...head, width: "27%", textAlign: "left" }}>Area tracked</th>
+              <th style={{ ...head, textAlign: "left" }}>Progress</th>
+              <th style={{ ...head, width: "17%" }}>Award</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={3} style={{ padding: 20, textAlign: "center", color: MUTED, fontStyle: "italic" }}>
+                  No learning areas are set for this class.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={3} style={{ padding: 20, textAlign: "center", color: MUTED, fontStyle: "italic" }}>
-                    No learning areas are set for this class.
+            ) : (
+              rows.map((row, i) => (
+                <tr key={row.id} className="print-block" style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
+                  <td
+                    style={{
+                      ...cell,
+                      fontSize: TYPE.table,
+                      fontWeight: 600,
+                      color: NAVY,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {row.name}
+                  </td>
+                  <td
+                    style={{
+                      ...cell,
+                      borderLeft: `1px solid ${LINE}`,
+                      color: INK,
+                      lineHeight: TYPE.narrativeLine,
+                    }}
+                  >
+                    {row.progress || <span style={{ color: MUTED }}>—</span>}
+                  </td>
+                  <td style={{ ...cell, borderLeft: `1px solid ${LINE}`, textAlign: "center" }}>
+                    <AwardChip award={row.award} />
                   </td>
                 </tr>
-              ) : (
-                rows.map((row, i) => (
-                  <tr key={row.id} style={{ background: i % 2 ? "#f7f9fc" : "#ffffff" }}>
-                    <td
-                      style={{
-                        padding: "7px 8px",
-                        borderTop: `1px solid ${LINE}`,
-                        verticalAlign: "top",
-                        fontWeight: 600,
-                        color: NAVY,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {row.name}
-                    </td>
-                    <td
-                      style={{
-                        padding: "7px 8px",
-                        borderTop: `1px solid ${LINE}`,
-                        borderLeft: `1px solid ${LINE}`,
-                        verticalAlign: "top",
-                        color: INK,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {row.progress || <span style={{ color: MUTED }}>—</span>}
-                    </td>
-                    <td
-                      style={{
-                        padding: "7px 8px",
-                        borderTop: `1px solid ${LINE}`,
-                        borderLeft: `1px solid ${LINE}`,
-                        verticalAlign: "top",
-                        textAlign: "center",
-                      }}
-                    >
-                      <AwardChip award={row.award} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </section>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
 
-        <div
+      <div
+        className="print-block"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+          border: `1px solid ${LINE}`,
+          borderRadius: 8,
+          padding: "6px 10px",
+          background: "#ffffff",
+        }}
+      >
+        <span
           style={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-            border: `1px solid ${LINE}`,
-            borderRadius: 8,
-            padding: "5px 10px",
-            background: "#ffffff",
+            fontFamily: SANS,
+            fontSize: TYPE.label,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: MUTED,
+            fontWeight: 700,
           }}
         >
-          <span
-            style={{
-              fontFamily: SANS,
-              fontSize: 8,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: MUTED,
-              fontWeight: 700,
-            }}
-          >
-            Key word
-          </span>
-          {AWARD_LEVELS.map((award) => (
-            <AwardChip key={award} award={award} />
-          ))}
-        </div>
+          Key word
+        </span>
+        {AWARD_LEVELS.map((award) => (
+          <AwardChip key={award} award={award} />
+        ))}
+      </div>
 
-        <section style={panel}>
+      <div className="print-flow-tail">
+        <section style={panel} className="print-block">
           <div style={panelHeader}>Teacher&apos;s remarks</div>
           <p
             style={{
               margin: "8px 0 0",
               fontFamily: DISPLAY,
-              fontSize: 12.5,
-              lineHeight: 1.4,
+              fontSize: TYPE.overall,
+              lineHeight: 1.5,
               color: INK,
             }}
           >
@@ -215,7 +209,20 @@ export function EarlyYearsReport({
         <SignatureBand adviser={student.adviser || ""} principal={settings.principal} />
 
         <ReportFooter settings={settings} />
-      </FitToPage>
+      </div>
     </article>
   );
 }
+
+const head: React.CSSProperties = {
+  padding: "6px 8px",
+  fontWeight: 600,
+  fontSize: TYPE.remark,
+  letterSpacing: "0.04em",
+};
+
+const cell: React.CSSProperties = {
+  padding: "8px",
+  borderTop: `1px solid ${LINE}`,
+  verticalAlign: "top",
+};
